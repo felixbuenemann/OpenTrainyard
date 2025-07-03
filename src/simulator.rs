@@ -439,7 +439,7 @@ pub fn check_arrived(trains: Vec<Train>, field: Vec<Vec<Tile>>) -> (bool, bool, 
     let mut new_field: Vec<Vec<Tile>> = field.clone();
     for (_, train) in trains.iter().enumerate(){
         let tile = &new_field[train.pos.py][train.pos.px];
-        if let Tile::EndTile{elems, t_:_t_, b_:_b_, l_:_l_, r_:_r_, orig_len: orig_len} = tile {
+        if let Tile::EndTile{elems, t_:_t_, b_:_b_, l_:_l_, r_:_r_, orig_len} = tile {
             if elems.v.contains(&Some(train.c)){
                 let mut newelems = elems.clone();
                 // Remove the FIRST instance of train.c in elems:

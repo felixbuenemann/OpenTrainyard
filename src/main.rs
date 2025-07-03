@@ -45,7 +45,6 @@ use crate::menu_game_screen::{MainGamePlugin, MenuMainGame};
 mod simulator;
 
 mod tests;
-use tests::test;
 
 use bevy_pkv::PkvStore;
 

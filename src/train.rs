@@ -81,7 +81,7 @@ pub fn spawn_and_move_trains(
         }
         else {  // Just move the trains
             // match game_state { BoardGameState::Running(_) => {}, _ => {continue;}}
-            for (_, train, mut transform, mut sprite) in trains_q.iter_mut() {
+            for (_, train, mut transform, sprite) in trains_q.iter_mut() {
                 *transform = get_train_transform(*train, board_dimensions, (board_tick_status.current_tick_in_a_tick as f32) / (tick_params.ticks as f32));
                 // println!("Getting train transform: {:?},  at tick: {:?}", train, tick_status.current_tick);
             }

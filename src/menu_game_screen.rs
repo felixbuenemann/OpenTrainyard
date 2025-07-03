@@ -297,7 +297,7 @@ fn click_back_button(
     mut solved_data_event_writer: EventWriter<SelectedLevelSolvedDataEvent>,
     mut selected_level: ResMut<SelectedLevel>,
 ) {
-    for (interaction, mut color) in &mut interaction_query {
+    for (interaction, color) in &mut interaction_query {
         match *interaction {
             Interaction::Clicked => {
                 // Serialize the current map:
@@ -350,7 +350,7 @@ fn click_undo_button(
         >,
     mut board_q: Query<(Entity, &mut BoardHoverable, &BoardGameState, &mut BoardTileMap), With<Board>>,
 ) {
-    for (interaction, mut color) in &mut interaction_query {
+    for (interaction, color) in &mut interaction_query {
         match *interaction {
             Interaction::Clicked => {
                 for (_, mut board_hoverable, hovering_state, mut board_tile_map) in board_q.iter_mut() {
@@ -399,7 +399,7 @@ pub fn style_run_button(
     mut commands: Commands,
     //Listen to the RunButton and the HoveringState:
     mut interaction_query: Query<Entity, (With<Button>, With<RunButton>)>,
-    mut board_q: Query<&BoardGameState, (With<Board>, Changed<BoardGameState>)>,
+    board_q: Query<&BoardGameState, (With<Board>, Changed<BoardGameState>)>,
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
     windows: Res<Windows>,
@@ -535,7 +535,7 @@ fn change_level(
         level_name_query: &Query<Entity,  With<LevelNameElem>>, 
         windows: &Windows, 
         // Query mut TextElem:
-        mut text_query: &mut Query<&mut Text, With<TextElem>>,
+        text_query: &mut Query<&mut Text, With<TextElem>>,
         popup_query: &mut Query<Entity, With<Popup>>,
 ) {
     // Delete board:

@@ -14,7 +14,6 @@ use bevy_tweening::lens::UiPositionLens;
 
 use crate::menu_utils::*;
 use crate::board::Rect;
-use crate::loading::TileAssets;
 
 use crate::board::*;
 use crate::all_puzzles_clean::*;
@@ -260,7 +259,7 @@ fn click_back_button_solution(
     mut game_state: ResMut<State<GameState>>,
     mut selected_level: ResMut<SelectedLevel>,
 ) {
-    for (interaction) in &mut interaction_query {
+    for interaction in &mut interaction_query {
         match *interaction {
             Interaction::Clicked => {
                 let level_name = selected_level.level.clone();
@@ -531,7 +530,7 @@ const SCALE: f32 = 0.5;
 fn _scroll_event_solution(
         v: f32,
         carousel_state: &mut ResMut<CarouselState>,
-        mut selected_level: &mut ResMut<SelectedLevel>,
+        selected_level: &mut ResMut<SelectedLevel>,
         board_q: &Query<(Entity, &Transform), With<Board>>,
         textnode_q: &Query<(Entity, &Transform, &Style), With<CarouselTextNode>>,
         windows: &Res<Windows>,

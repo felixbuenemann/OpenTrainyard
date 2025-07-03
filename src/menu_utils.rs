@@ -3,12 +3,11 @@ use std::time::Duration;
 use crate::loading::FontAssets;
 use crate::menu_game_screen::{MainGameBotton, NextLevelButton};
 
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::ui::widget::ImageMode;
 use bevy::ui::FocusPolicy;
 use bevy_tweening::*;
-use bevy_tweening::lens::{TransformScaleLens, UiPositionLens};
+use bevy_tweening::lens::TransformScaleLens;
 
 
 use crate::loading::TileAssets;
@@ -194,10 +193,10 @@ pub fn scrollbar_input_handler(
             &mut ScrollBarLimits,
             &mut ScrollBarStatus,
         ),
-        (Changed<Interaction>),
+        Changed<Interaction>,
     >,
 ) {
-    for (interaction, mut color, mut sbpos, mut sblimits, mut sbstatus) in
+    for (interaction, color, sbpos, sblimits, mut sbstatus) in
         interaction_query.iter_mut()
     {
         match *interaction {
@@ -228,7 +227,7 @@ pub fn scrollbar_dragging_handler(
     )>,
     mut dragged_event_writer: EventWriter<ScrollBarLimits>,
 ) {
-    for (mut transform, mut gltr, mut style, mut sbpos, mut sblimits, mut sbstatus) in
+    for (transform, gltr, mut style, mut sbpos, mut sblimits, sbstatus) in
         interaction_query.iter_mut()
     {
         if sbstatus.dragging {
@@ -408,7 +407,7 @@ fn _touch_event_handler(
 
 
 pub fn make_scrollbar(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     assets: &TileAssets,
     font_assets: &FontAssets,
     font_size: f32,

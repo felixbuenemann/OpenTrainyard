@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use bevy_pkv::PkvStore;
 
-use crate::{simulator::{count_tracks, count_double_tracks, pretty_print_map, Tile, parse_map}, all_puzzles_clean::PuzzlesData, utils::SelectedLevel};
+use crate::{simulator::{count_tracks, count_double_tracks, pretty_print_map, Tile, parse_map}, utils::SelectedLevel};
 
 
 

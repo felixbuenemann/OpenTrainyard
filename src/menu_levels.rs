@@ -5,7 +5,6 @@ use crate::loading::TileAssets;
 use crate::utils::SelectedLevel;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
-use bevy_pkv::PkvStore;
 
 use crate::loading::FontAssets;
 use crate::menu_utils::*;
@@ -191,7 +190,7 @@ fn click_back_button_levels(
     mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<BackButtonLevels>)>,
     mut game_state: ResMut<State<GameState>>,
 ) {
-    for (interaction) in &mut interaction_query {
+    for interaction in &mut interaction_query {
         match *interaction {
             Interaction::Clicked => {
                 game_state.set(GameState::MenuTitle);

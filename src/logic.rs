@@ -136,7 +136,7 @@ pub fn tile_hover_event(
         // Match the 2 types of event:
         match ev {
             TileHoverEvent::Newhover(pos) => {
-                for (board_dimensions, mut hoverable, mut board_tile_map, mut hovering_state) in board_q.iter_mut() { // It's never more than 1, but can very well be 0
+                for (board_dimensions, mut hoverable, mut board_tile_map, hovering_state) in board_q.iter_mut() { // It's never more than 1, but can very well be 0
                     let pos = hovered_tile(board_dimensions, *pos);
                     let pos = match pos { None => continue, Some(b) => b, };
                     match &hovering_state {

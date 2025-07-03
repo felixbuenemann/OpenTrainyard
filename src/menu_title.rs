@@ -60,7 +60,7 @@ fn setup_menu(
     textures: Res<TileAssets>,
     windows: Res<Windows>,
     tile_assets: Res<TileAssets>,
-    mut pkv: ResMut<PkvStore>,
+    pkv: ResMut<PkvStore>,
 
     mut player_solutions_data: ResMut<SolutionsSavedData>,
 
@@ -174,7 +174,7 @@ fn click_play_button(
     mut selected_level: ResMut<SelectedLevel>,
     levels: Res<PuzzlesData>,
 ) {
-    for (interaction, mut color) in &mut interaction_query {
+    for (interaction, color) in &mut interaction_query {
         match *interaction {
             Interaction::Clicked => {
                 if !player_solutions_data.just_begun() {

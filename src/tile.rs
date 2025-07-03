@@ -147,7 +147,7 @@ fn add_color_minitiles_children(
             let n_to_get = i * poss.len() + j;
             if n_to_get < elems.len() {
                 let pos_x = -(23. - (*x as f32) - (small_tile_size as f32) / 2. +1.5); // * scale;
-                let pos_y = (23. - (*y as f32) - (small_tile_size as f32) / 2. +1.5); // * scale;
+                let pos_y = 23. - (*y as f32) - (small_tile_size as f32) / 2. +1.5; // * scale;
                 let prefix = if is_start { "s" } else { "e" };
                 let minitile = format!(
                     "{}_elem_{}_{}.png",
@@ -177,7 +177,7 @@ fn get_transform_and_texture(
     t: Tile,
     assets: &TileAssets,
 ) -> (Handle<Image>, Transform) {
-    let mut transform = Transform::from_xyz(0., 0., 1.);
+    let transform = Transform::from_xyz(0., 0., 1.);
     let texture_path: String;
     // Print the tile:
     let (texture_path, transform): (String, Transform) = match t {
@@ -331,16 +331,16 @@ fn add_arrow_minitile_children(
     let pos_y: f32;
     let mut t = Transform::from_xyz(0., 0., 0.5);
     if dir == Side::R_ {
-        pos_x = (23. - 6. / 2.); // * scale;
+        pos_x = 23. - 6. / 2.; // * scale;
         pos_y = 0.;
     } else if dir == Side::T_ {
         t = rotate_tile(t, std::f32::consts::PI / 2.);
         pos_x = 0.;
-        pos_y = (23. - 6. + 6. / 2.); // * scale;
+        pos_y = 23. - 6. + 6. / 2.; // * scale;
     } else if dir == Side::B_ {
         t = rotate_tile(t, -std::f32::consts::PI / 2.);
         pos_x = 0.;
-        pos_y = ( - 23. + 6. / 2.); // * scale;
+        pos_y = - 23. + 6. / 2.; // * scale;
     } else {
         t = flipmatrix_horizontal(t);
         pos_x = -(23. - 6. / 2.); // * scale;
@@ -370,7 +370,7 @@ fn add_funnels_minitile_children(
     let funnel = get_asset("e_funnel_elem_rigth.png".to_string(), assets);
     if r_ {
         let mut t = Transform::from_xyz(0., 0., 0.5);
-        let pos_x = (23. - 8. / 2.); // * scale;
+        let pos_x = 23. - 8. / 2.; // * scale;
         let pos_y = 0.;
         // Translate t to the right position:
         t.translation.x = pos_x;
@@ -399,7 +399,7 @@ fn add_funnels_minitile_children(
         let mut t = Transform::from_xyz(0., 0., 0.5);
         t = rotate_tile(t, std::f32::consts::PI / 2.);
         let pos_x = 0.;
-        let pos_y = (23. - 8. + 8. / 2.); // * scale;
+        let pos_y = 23. - 8. + 8. / 2.; // * scale;
         // Translate t to the right position:
         t.translation.x = pos_x;
         t.translation.y = pos_y;
@@ -413,7 +413,7 @@ fn add_funnels_minitile_children(
         let mut t = Transform::from_xyz(0., 0., 0.5);
         t = rotate_tile(t, -std::f32::consts::PI / 2.);
         let pos_x = 0.;
-        let pos_y = (- 23. + 8. / 2.); // * scale;
+        let pos_y = - 23. + 8. / 2.; // * scale;
         // Translate t to the right position:
         t.translation.x = pos_x;
         t.translation.y = pos_y;
