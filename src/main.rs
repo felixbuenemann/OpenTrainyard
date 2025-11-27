@@ -3,9 +3,8 @@
 
 use bevy::prelude::*;
 use bevy_tweening::*;
-use bevy::window::WindowId;
+use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
-use bevy::DefaultPlugins;
 use data_saving::{SolutionsSavedData, SelectedLevelSolvedDataEvent, save_player_data};
 use menu_credits::MenuCredits;
 use menu_solutions::MenuSolutionsPlugin;
@@ -67,9 +66,10 @@ pub enum ButtonAction {Clear,Generate}
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
 // Or https://github.com/bevyengine/bevy/blob/main/examples/ecs/state.rs
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
-enum GameState {
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States, Reflect)]
+pub enum GameState {
     // During the loading State the LoadingPlugin will load our assets
+    #[default]
     Loading,
     // Here the menu is drawn and waiting for player interaction
     MenuTitle,
@@ -93,36 +93,43 @@ fn main() {
     // test();
     App::new()
         // .insert_resource(Msaa { samples: 0 })
-        .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
+        .insert_resource(ClearColor(Color::srgb(0.4, 0.4, 0.4)))
         .insert_resource(PkvStore::new("OpenTrainyard", "OpenTrainyard"))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {width: 320.,height: 550.,title: "Trainyard".to_string(), canvas: Some("#bevy".to_owned()), ..default()},
+            primary_window: Some(Window {
+                resolution: (320., 550.).into(),
+                title: "Trainyard".to_string(),
+                canvas: Some("#bevy".to_owned()),
+                ..default()
+            }),
             ..default()
         }).set(ImagePlugin::default_nearest()))
-        .add_plugin(TweeningPlugin)
-        .add_startup_system(setup_camera) // Startup system (cameras)
-        .add_startup_system(set_window_icon)
+        .add_plugins(TweeningPlugin)
+        .add_systems(Startup, (setup_camera, set_window_icon))
         .insert_resource(load_puzzles_data())
         .insert_resource(SolutionsSavedData::default())
         .insert_resource(SelectedLevel::default())
-        .add_plugin(LoadingPlugin)
-        .add_plugin(MenuPlugin)
-        .add_plugin(MenuLevelsPlugin)
-        .add_plugin(MenuSolutionsPlugin)
-        .add_plugin(MenuMainGame)
-        .add_plugin(MenuCredits)
-        // .add_plugin(InternalAudioPlugin)
-        .add_plugin(MainGamePlugin)
-        .add_state(GameState::Loading)
-        .add_system(button_color_handler)
-        .add_system(save_player_data)
+        .add_plugins(LoadingPlugin)
+        .add_plugins(MenuPlugin)
+        .add_plugins(MenuLevelsPlugin)
+        .add_plugins(MenuSolutionsPlugin)
+        .add_plugins(MenuMainGame)
+        .add_plugins(MenuCredits)
+        // .add_plugins(InternalAudioPlugin)
+        .add_plugins(MainGamePlugin)
+        .init_state::<GameState>()
+        .add_systems(Update, (button_color_handler, save_player_data))
         .add_event::<SelectedLevelSolvedDataEvent>()
         .run();
 }
 
 // Sets the icon on windows and X11
-fn set_window_icon(windows: NonSend<WinitWindows>) {
-    let primary = windows.get_window(WindowId::primary()).unwrap();
+fn set_window_icon(
+    windows: NonSend<WinitWindows>,
+    window_query: Query<Entity, With<PrimaryWindow>>,
+) {
+    let entity = window_query.single();
+    let Some(primary) = windows.get_window(entity) else { return };
     let icon_buf = Cursor::new(include_bytes!("../assets/samples/icon_crop.png"));
     if let Ok(image) = image::load(icon_buf, image::ImageFormat::Png) {
         let image = image.into_rgba8();

@@ -14,14 +14,12 @@ impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_loading_state(
             LoadingState::new(GameState::Loading)
-                .with_collection::<FontAssets>()
-                // .with_collection::<AudioAssets>()
-                .with_collection::<TrainAssets>()
-                .with_collection::<TileAssets>()
-                .continue_to_state(GameState::MenuTitle),
-                // .continue_to_state(GameState::Playing),
-            )
-        ;
+                .continue_to_state(GameState::MenuTitle)
+                .load_collection::<FontAssets>()
+                // .load_collection::<AudioAssets>()
+                .load_collection::<TrainAssets>()
+                .load_collection::<TileAssets>()
+        );
     }
 }
 

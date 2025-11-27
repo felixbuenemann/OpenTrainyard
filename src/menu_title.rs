@@ -25,12 +25,9 @@ pub struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ButtonColors>()
-            .add_system_set(SystemSet::on_enter(GameState::MenuTitle).with_system(setup_menu))
-            .add_system_set(
-                SystemSet::on_update(GameState::MenuTitle)
-                .with_system(click_play_button)
-                .with_system(click_button_credits))
-            .add_system_set(SystemSet::on_exit(GameState::MenuTitle).with_system(cleanup_menu));
+            .add_systems(OnEnter(GameState::MenuTitle), setup_menu)
+            .add_systems(Update, (click_play_button, click_button_credits).run_if(in_state(GameState::MenuTitle)))
+            .add_systems(OnExit(GameState::MenuTitle), cleanup_menu);
     }
 }
 
@@ -58,7 +55,7 @@ fn setup_menu(
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
     textures: Res<TileAssets>,
-    windows: Res<Windows>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     tile_assets: Res<TileAssets>,
     pkv: ResMut<PkvStore>,
 
@@ -75,8 +72,9 @@ fn setup_menu(
         *player_solutions_data = SolutionsSavedData::default();
     }
 
-    let width = windows.get_primary().unwrap().width();
-    let height = windows.get_primary().unwrap().height();
+    let window = window_query.single();
+    let width = window.width();
+    let height = window.height();
     println!("YES IM HERE. good...");
     commands.spawn(
         // NodeBundle{..default()}).with_children(|parent| {parent.spawn(
@@ -114,7 +112,9 @@ fn setup_menu(
             margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center, // Baseline, // FlexEnd, // Stretch, // Center, // I have to say, this was cool ....
-            position: UiRect { top: Val::Px(height * 0.11), left: Val::Px(width / 2.), right: Val::Px(width / 2.), ..default() },
+            top: Val::Px(height * 0.11),
+            left: Val::Px(width / 2.),
+            right: Val::Px(width / 2.),
             ..default()
         },
         background_color: BackgroundColor(button_colors.hovered),
@@ -128,9 +128,9 @@ fn setup_menu(
         text: Text {
             sections: vec![TextSection {
                 value: "Trainyard".to_string(),
-                style: TextStyle { font: font_assets.fira_sans.clone(), font_size: 45., color: Color::rgb(0.9, 0.9, 0.9), },
+                style: TextStyle { font: font_assets.fira_sans.clone(), font_size: 45., color: Color::srgb(0.9, 0.9, 0.9), },
             }],
-            alignment: TextAlignment{ vertical: VerticalAlign::Center, horizontal: HorizontalAlign::Center, },
+            justify: JustifyText::Center,
         ..default()
     },
     ..default()
@@ -165,7 +165,7 @@ fn setup_menu(
 
 
 fn click_play_button(
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>, With<StartGameBotton>),
@@ -176,9 +176,9 @@ fn click_play_button(
 ) {
     for (interaction, color) in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 if !player_solutions_data.just_begun() {
-                    state.set(GameState::MenuLevels).unwrap();
+                    next_state.set(GameState::MenuLevels);
                 } else {
                     let level_name = levels.puzzles[0].name.clone();
                     let empty_map = levels.puzzles[0].parsed_map.clone();
@@ -191,7 +191,7 @@ fn click_play_button(
                         vanilla_map: empty_map,
                         city: "".to_string(),
                     };
-                    state.set(GameState::Playing).unwrap();
+                    next_state.set(GameState::Playing);
                 }
             }
             _ => {}
@@ -201,13 +201,13 @@ fn click_play_button(
 
 fn click_button_credits(
     mut interaction_query: Query<&Interaction,(Changed<Interaction>, With<Button>, With<ButtonCredits>),>,
-    mut game_state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     for interaction in &mut interaction_query {
         println!("click_play_button");
         match *interaction {
-            Interaction::Clicked => {
-                game_state.set(GameState::MenuCredits);
+            Interaction::Pressed => {
+                next_state.set(GameState::MenuCredits);
             }
             _ => {}
         }

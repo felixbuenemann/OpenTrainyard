@@ -135,7 +135,7 @@ pub struct DataToInsert{
 }
 
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Event)]
 pub struct SelectedLevelSolvedDataEvent {
     pub data: Option<DataToInsert>  // IF NONE, it will be TAKEN FROM THE SELECTED LEVEL RESOURCE
 }
@@ -151,7 +151,7 @@ pub fn save_player_data(
     mut level_solved_events: EventReader<SelectedLevelSolvedDataEvent>,
     selected_level: ResMut<SelectedLevel>,
 ) {
-    for ev in level_solved_events.iter() {
+    for ev in level_solved_events.read() {
         let (level_name, maps) = match &ev.data {
             Some(data) => (data.level_name.clone(), data.maps.clone()),
             None => (selected_level.level.clone(), selected_level.player_maps.clone()),

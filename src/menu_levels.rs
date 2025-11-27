@@ -25,19 +25,19 @@ pub struct MenuLevelsPlugin;
 impl Plugin for MenuLevelsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ButtonColors>()
-            .add_system_set(SystemSet::on_enter(GameState::MenuLevels).with_system(setup_menu_levels))
-            .add_system_set(SystemSet::on_update(GameState::MenuLevels)
-                .with_system(scroll_events_levels_touch)
-                .with_system(scroll_events_levels_mouse)
-                .with_system(handle_gesture_mouse)
-                .with_system(handle_gesture_touch)
-                .with_system(handle_full_click)
-                .with_system(click_play_button_levels)
-                .with_system(click_back_button_levels)
-            )
+            .add_systems(OnEnter(GameState::MenuLevels), setup_menu_levels)
+            .add_systems(Update, (
+                scroll_events_levels_touch,
+                scroll_events_levels_mouse,
+                handle_gesture_mouse,
+                handle_gesture_touch,
+                handle_full_click,
+                click_play_button_levels,
+                click_back_button_levels,
+            ).run_if(in_state(GameState::MenuLevels)))
             // ButtonColors resource:
             .insert_resource(MenuLimits{..default()})
-            .add_system_set(SystemSet::on_exit(GameState::MenuLevels).with_system(cleanup_menu_levels))
+            .add_systems(OnExit(GameState::MenuLevels), cleanup_menu_levels)
             // Event FullClickHappened:
             .add_event::<FullClickHappened>()
             .add_event::<ScrollHappened>()
@@ -88,7 +88,7 @@ fn setup_menu_levels(
     button_colors: Res<ButtonColors>,
     mut selected_level: ResMut<SelectedLevel>,
     levels: Res<PuzzlesData>,
-    windows: Res<Windows>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     player_solutions_data: Res<SolutionsSavedData>,
     tile_assets: Res<TileAssets>,
     // Resourvce:
@@ -96,8 +96,9 @@ fn setup_menu_levels(
 ) {
     println!("YES IM HERE. good...");
     println!("Fingerss?????????");
-    let width = windows.get_primary().unwrap().width();
-    let height = windows.get_primary().unwrap().height();
+    let window = window_query.single();
+    let width = window.width();
+    let height = window.height();
 
     // Get name of first level:
     let names = levels.puzzles.iter().map(|x| x.name.clone()).collect::<Vec<String>>();
@@ -188,12 +189,12 @@ fn setup_menu_levels(
 
 fn click_back_button_levels(
     mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<BackButtonLevels>)>,
-    mut game_state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
-                game_state.set(GameState::MenuTitle);
+            Interaction::Pressed => {
+                next_state.set(GameState::MenuTitle);
             }
             _ => {}
         }
@@ -211,7 +212,7 @@ fn click_play_button_levels(
 ) {
     for (interaction, button_data) in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 selected_level.level = button_data.text.clone();
             }
             _ => {}
@@ -232,7 +233,7 @@ fn scroll_events_levels_mouse(
     mut menu_limits: ResMut<MenuLimits>,
 ) {
     use bevy::input::mouse::MouseScrollUnit;
-    for ev in scroll_evr.iter() {
+    for ev in scroll_evr.read() {
         let vy = match ev.unit {
             MouseScrollUnit::Line => {ev.y * SCROLLWHEEL_SPEED_MULTIPLIER}
             MouseScrollUnit::Pixel => {ev.y * TRACKPAD_SPEED_MULTIPLIER}
@@ -241,7 +242,9 @@ fn scroll_events_levels_mouse(
         if delta != 0. {
             menu_limits.current_firstbutton_heigh += delta;
             for (mut style, _) in button_query.iter_mut() {
-                style.position.top.try_add_assign(Val::Px(delta));
+                if let Val::Px(current) = style.top {
+                    style.top = Val::Px(current + delta);
+                }
             }
         }
 
@@ -257,20 +260,20 @@ fn scroll_events_levels_touch(
     mut current_vy: Local<Option<f32>>,
     mut button_query: Query<(&mut Style, &LevelButton),(With<Button>, With<LevelButton>),>,
     mut scroll_evr: EventReader<ScrollHappened>,
-    // touches: Res<Touches>, 
+    // touches: Res<Touches>,
     mut menu_limits: ResMut<MenuLimits>,
 ) {
-    
+
     if let Some(vy) = current_vy.as_ref() {
         let new_vy = vy * (1. - TOUCH_SWIPE_SPEED_DECAY);
-        if new_vy.abs() > 0.1 { *current_vy = Some(new_vy);} 
+        if new_vy.abs() > 0.1 { *current_vy = Some(new_vy);}
         else {*current_vy = None;}
     }
     // for finger in touches.iter() {
     //     *current_vy = Some(finger.delta().y);
     //     let finger_pos = format!("{:?}", finger.position());
     // }
-    for ev in scroll_evr.iter() {
+    for ev in scroll_evr.read() {
         *current_vy = Some(ev.vy);
     }
     if let Some(vy) = current_vy.as_ref() {
@@ -279,7 +282,9 @@ fn scroll_events_levels_touch(
         if delta != 0. {
             menu_limits.current_firstbutton_heigh += delta;
             for (mut style, _) in button_query.iter_mut() {
-                style.position.top.try_add_assign(Val::Px(delta));
+                if let Val::Px(current) = style.top {
+                    style.top = Val::Px(current + delta);
+                }
             }
         }
     }
@@ -291,16 +296,17 @@ fn scroll_events_levels_touch(
 // Listen to event:
 fn handle_full_click(
     mut full_click_happened_reader: EventReader<FullClickHappened>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     selected_level: Res<SelectedLevel>,
-    windows: Res<Windows>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
-    for ev in full_click_happened_reader.iter() {
+    for ev in full_click_happened_reader.read() {
         info!("YEEEE Successfull Click!!! : ");
-        let height = windows.get_primary().unwrap().height();
+        let window = window_query.single();
+        let height = window.height();
         if selected_level.level != "" && ev.pos.y < height / 2. - BANNER_HEIGHT
         {
-            state.set(GameState::MenuSolutions).unwrap();
+            next_state.set(GameState::MenuSolutions);
         }
     }
 }
@@ -347,15 +353,13 @@ pub fn make_top_banner(
     let mut ec = commands.spawn(ImageBundle {
         style: Style {
             position_type: PositionType::Absolute,
-            size: Size::new(Val::Px(pright - pleft), Val::Px(height)),
+            width: Val::Px(pright - pleft),
+            height: Val::Px(height),
             margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center, // Baseline, // FlexEnd, // Stretch, // Center, // I have to say, this was cool ....
-            position: UiRect {
-                top: Val::Px(0.),
-                left: Val::Px(pleft),
-                ..default()
-            },
+            top: Val::Px(0.),
+            left: Val::Px(pleft),
 
             ..default()
         },
@@ -378,13 +382,10 @@ pub fn make_top_banner(
                 style: TextStyle {
                     font: font_assets.fira_sans.clone(),
                     font_size: font_size,
-                    color: Color::rgb(0.9, 0.9, 0.9),
+                    color: Color::srgb(0.9, 0.9, 0.9),
                 },
             }],
-            alignment: TextAlignment{
-                vertical: VerticalAlign::Center,
-                horizontal: HorizontalAlign::Center,
-        },
+            justify: JustifyText::Center,
         ..default()
     },
     ..default()
@@ -421,15 +422,13 @@ pub fn make_menu_elem(
     let mut ec = commands.spawn((ButtonBundle {
         style: Style {
             position_type: PositionType::Absolute,
-            size: Size::new(Val::Px(pright - pleft), Val::Px(ptop - pbottom)),
+            width: Val::Px(pright - pleft),
+            height: Val::Px(ptop - pbottom),
             margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::SpaceBetween,
             align_items: AlignItems::Center, // Baseline, // FlexEnd, // Stretch, // Center, // I have to say, this was cool ....
-            position: UiRect {
-                top: Val::Px(ptop),
-                left: Val::Px(pleft),
-                ..default()
-            },
+            top: Val::Px(ptop),
+            left: Val::Px(pleft),
             ..default()
         },
         background_color: button_colors.normal.into(),
@@ -445,13 +444,11 @@ pub fn make_menu_elem(
                     style: TextStyle {
                         font: font_assets.fira_sans.clone(),
                         font_size: font_size,
-                        color: Color::rgb(0.9, 0.9, 0.9),
+                        color: Color::srgb(0.9, 0.9, 0.9),
                     },
                 }],
-                alignment: TextAlignment{
-                    vertical: VerticalAlign::Center,
-                    horizontal: HorizontalAlign::Left,
-                },
+                justify: JustifyText::Left,
+                ..default()
             },
             style: Style{margin: UiRect{left: Val::Px(20.), ..default()}, ..default()},
             ..default()
@@ -460,23 +457,23 @@ pub fn make_menu_elem(
             parent.spawn(
                 // NodeBundle{..default()}).with_children(|parent| {parent.spawn(
                 ImageBundle {
-                    image: UiImage(tile_assets.tick.clone()),
+                    image: UiImage::new(tile_assets.tick.clone()),
                     // transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-                    style: Style { 
+                    style: Style {
                         //display: (), position_type: (), direction: (), flex_direction: (), flex_wrap: (), align_items: (), align_self: (), align_content: (), justify_content: (), position: (), margin: (), padding: (), border: (), flex_grow: (), flex_shrink: (), flex_basis: (), size: (), min_size: (), max_size: (), aspect_ratio: (), overflow: () }
                         // Center vertically and put at 66% of the width:
                         position_type: PositionType::Relative,
                         margin: UiRect{right: Val::Px(2.), left: Val::Px(70.), ..default()},
                         // Align to the RIGHT of the parent object:
                         align_items: AlignItems::FlexEnd,
-                        
+
                         ..default()
-                        
+
                     },
                     // Scale down to 50% of the width:
                     transform: Transform{..default()}.with_scale(Vec3::splat(0.45)),
                     ..default()
-            });  
+            });
             parent.spawn(TextBundle {
                 text: Text {
                     sections: vec![TextSection {
@@ -484,13 +481,11 @@ pub fn make_menu_elem(
                         style: TextStyle {
                             font: font_assets.fira_sans.clone(),
                             font_size: font_size,
-                            color: Color::rgb(0.9, 0.9, 0.9),
+                            color: Color::srgb(0.9, 0.9, 0.9),
                         },
                     }],
-                    alignment: TextAlignment{
-                        vertical: VerticalAlign::Center,
-                        horizontal: HorizontalAlign::Right,
-                    },
+                    justify: JustifyText::Right,
+                    ..default()
                 },
                 style: Style{
                     align_items: AlignItems::FlexEnd,
