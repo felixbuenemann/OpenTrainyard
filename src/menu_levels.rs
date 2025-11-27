@@ -114,7 +114,7 @@ fn setup_menu_levels(
     let rect_width = 320.;
     let rect_height = 40.;
 
-    make_top_banner( &mut commands, &font_assets, &button_colors, 30., width / 2. - rect_width / 2., width / 2. + rect_width / 2., BANNER_HEIGHT);
+    make_top_banner( &mut commands, &font_assets, &button_colors, 21., width / 2. - rect_width / 2., width / 2. + rect_width / 2., BANNER_HEIGHT);
 
     // Heigh of the entire menu:
     let menu_height = (names.len() as f32) * rect_height;
@@ -181,7 +181,7 @@ fn setup_menu_levels(
             menu_limits.current_firstbutton_heigh = top;
         }
 
-        make_menu_elem(name.to_string(), score, i as u16, &mut commands, &font_assets, &button_colors, 25., left, right, top, bottom, &tile_assets);
+        make_menu_elem(name.to_string(), score, i as u16, &mut commands, &font_assets, &button_colors, 18., left, right, top, bottom, &tile_assets);
         selected_level.level = "".to_string();
     }
 }
@@ -392,7 +392,7 @@ pub fn make_top_banner(
     let back_top =  margin;
     let back_left = margin;
     let back_right = margin + button_width;
-    let back_id = make_button("BACK".to_string(), commands, &font_assets, &button_colors, 20., back_left, back_right, back_top, back_bottom, BackButtonLevels{}, None::<Banner>);
+    let back_id = make_button("BACK".to_string(), commands, &font_assets, &button_colors, 14., back_left, back_right, back_top, back_bottom, BackButtonLevels{}, None::<Banner>);
     commands.entity(ec_id).add_children(&[back_id]);
     ec_id
 }

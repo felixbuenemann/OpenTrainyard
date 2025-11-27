@@ -139,7 +139,7 @@ fn setup_menu(
     let right = width / 2. + rect_width / 2. + offset_x;
     let top = height / 2. - rect_height / 2. + offset_y;
     let bottom = height / 2. - rect_height * 1.5 + offset_y;
-    let _startbutton_id = make_button("PLAY".to_string(), &mut commands, &font_assets, &button_colors, 35., left, right, top, bottom, MainMenuElem, Some(StartGameBotton));
+    let _startbutton_id = make_button("PLAY".to_string(), &mut commands, &font_assets, &button_colors, 25., left, right, top, bottom, MainMenuElem, Some(StartGameBotton));
 
 
     let rect_width = 100.;
@@ -151,7 +151,7 @@ fn setup_menu(
     let right = width / 2. + rect_width / 2. + offset_x;
     let top = height / 2. - rect_height / 2. + offset_y;
     let bottom = height / 2. - rect_height * 1.5 + offset_y;
-    let _startbutton_id = make_button("CREDITS".to_string(), &mut commands, &font_assets, &button_colors, 25., left, right, top, bottom, MainMenuElem, Some(ButtonCredits));
+    let _startbutton_id = make_button("CREDITS".to_string(), &mut commands, &font_assets, &button_colors, 18., left, right, top, bottom, MainMenuElem, Some(ButtonCredits));
 }
 
 
