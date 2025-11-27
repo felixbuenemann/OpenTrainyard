@@ -508,9 +508,8 @@ pub fn make_button(
             position_type: PositionType::Absolute,
             width: Val::Px(pright - pleft),
             height: Val::Px(ptop - pbottom),
-            margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center, // I have to say, this was cool ....
+            align_items: AlignItems::Center,
             top: Val::Px(ptop),
             left: Val::Px(pleft),
             ..default()
@@ -704,7 +703,6 @@ pub fn make_tutorial_popup(
         Button,
         Node {
             position_type: PositionType::Absolute,
-            margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center, // I have to say, this was cool ....
             // Button (centered horizontally, 40% of width., bottom vertically)
@@ -790,7 +788,6 @@ pub fn make_victory_popup(
         Button,
         Node {
             position_type: PositionType::Absolute,
-            margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center, // I have to say, this was cool ....
             bottom: Val::Percent(5.),
@@ -823,7 +820,6 @@ pub fn make_victory_popup(
         Button,
         Node {
             position_type: PositionType::Absolute,
-            margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center, // I have to say, this was cool ....
             bottom: Val::Percent(5.),
