@@ -213,8 +213,6 @@ pub fn scrollbar_input_handler(
 pub fn scrollbar_dragging_handler(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut interaction_query: Query<(
-        &mut Transform,
-        &mut GlobalTransform,
         &mut Node,
         &mut ScrollBarPosition,
         &mut ScrollBarLimits,
@@ -222,7 +220,7 @@ pub fn scrollbar_dragging_handler(
     )>,
     mut dragged_event_writer: MessageWriter<ScrollBarLimitsEvent>,
 ) {
-    for (_transform, _gltr, mut node, mut sbpos, mut sblimits, sbstatus) in
+    for (mut node, mut sbpos, mut sblimits, sbstatus) in
         interaction_query.iter_mut()
     {
         if sbstatus.dragging {
