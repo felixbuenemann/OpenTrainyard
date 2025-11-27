@@ -401,7 +401,7 @@ pub fn make_top_banner(
 pub fn make_menu_elem(
     name: String,
     score: String,
-    index: u16,
+    _index: u16,
     commands: &mut Commands,
     font_assets: &FontAssets,
     button_colors: &ButtonColors,

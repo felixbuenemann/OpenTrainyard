@@ -199,7 +199,7 @@ pub fn scrollbar_input_handler(
         Changed<Interaction>,
     >,
 ) {
-    for (interaction, color, sbpos, sblimits, mut sbstatus) in
+    for (interaction, _color, _sbpos, _sblimits, mut sbstatus) in
         interaction_query.iter_mut()
     {
         match *interaction {
@@ -230,7 +230,7 @@ pub fn scrollbar_dragging_handler(
     )>,
     mut dragged_event_writer: EventWriter<ScrollBarLimitsEvent>,
 ) {
-    for (transform, gltr, mut node, mut sbpos, mut sblimits, sbstatus) in
+    for (_transform, _gltr, mut node, mut sbpos, mut sblimits, sbstatus) in
         interaction_query.iter_mut()
     {
         if sbstatus.dragging {
@@ -412,11 +412,11 @@ fn _touch_event_handler(
 
 pub fn make_scrollbar(
     commands: &mut Commands,
-    assets: &TileAssets,
+    _assets: &TileAssets,
     font_assets: &FontAssets,
     font_size: f32,
     scroll_bar_limits: ScrollBarLimits,
-    button_colors: &ButtonColors,
+    _button_colors: &ButtonColors,
     pleft: f32,
     pright: f32,
     ptop: f32,
@@ -458,7 +458,7 @@ pub fn make_scrollbar(
 
     // get the fraction from (scroll_bar_limits.current - min) / (scroll_bar_limits.max- min)
     // and apply it to ScrollBarPosition{ max_x: pright, min_x: pleft} to get the current_x:
-    let fraction = (scroll_bar_limits.current - scroll_bar_limits.min)
+    let _fraction = (scroll_bar_limits.current - scroll_bar_limits.min)
         / (scroll_bar_limits.max - scroll_bar_limits.min);
     let current_x = position_fraction * (pright - pleft);
     let current_val = _get_scrollbar_value(position_fraction, &scroll_bar_limits);
@@ -548,7 +548,7 @@ pub fn make_button(
 pub fn make_rect_with_colored_text(
     text1: String,
     text2: String,
-    textcolor: Color,
+    _textcolor: Color,
     commands: &mut Commands,
     font_assets: &FontAssets,
     button_colors: &ButtonColors,
@@ -599,7 +599,7 @@ pub fn make_text(
     text: String,
     commands: &mut Commands,
     font_assets: &FontAssets,
-    button_colors: &ButtonColors,
+    _button_colors: &ButtonColors,
     font_size: f32,
     pleft: f32,
     pright: f32,

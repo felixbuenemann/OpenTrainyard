@@ -16,7 +16,7 @@ pub struct SelectedLevel {
     pub vanilla_map: String,
 }
 
-#[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
+#[cfg_attr(feature = "dev", derive(bevy_inspector_egui::Inspectable))]
 #[derive(Debug, Copy, Default, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Component)]
 pub struct Coordinates {
     pub x: u16,

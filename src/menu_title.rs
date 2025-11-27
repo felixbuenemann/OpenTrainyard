@@ -54,7 +54,7 @@ fn setup_menu(
     mut commands: Commands,
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
-    textures: Res<TileAssets>,
+    _textures: Res<TileAssets>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     tile_assets: Res<TileAssets>,
     pkv: ResMut<PkvStore>,
@@ -139,7 +139,7 @@ fn setup_menu(
     let right = width / 2. + rect_width / 2. + offset_x;
     let top = height / 2. - rect_height / 2. + offset_y;
     let bottom = height / 2. - rect_height * 1.5 + offset_y;
-    let startbutton_id = make_button("PLAY".to_string(), &mut commands, &font_assets, &button_colors, 35., left, right, top, bottom, MainMenuElem, Some(StartGameBotton));
+    let _startbutton_id = make_button("PLAY".to_string(), &mut commands, &font_assets, &button_colors, 35., left, right, top, bottom, MainMenuElem, Some(StartGameBotton));
 
 
     let rect_width = 100.;
@@ -151,7 +151,7 @@ fn setup_menu(
     let right = width / 2. + rect_width / 2. + offset_x;
     let top = height / 2. - rect_height / 2. + offset_y;
     let bottom = height / 2. - rect_height * 1.5 + offset_y;
-    let startbutton_id = make_button("CREDITS".to_string(), &mut commands, &font_assets, &button_colors, 25., left, right, top, bottom, MainMenuElem, Some(ButtonCredits));
+    let _startbutton_id = make_button("CREDITS".to_string(), &mut commands, &font_assets, &button_colors, 25., left, right, top, bottom, MainMenuElem, Some(ButtonCredits));
 }
 
 
@@ -167,7 +167,7 @@ fn click_play_button(
     mut selected_level: ResMut<SelectedLevel>,
     levels: Res<PuzzlesData>,
 ) {
-    for (interaction, color) in &mut interaction_query {
+    for (interaction, _color) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
                 if !player_solutions_data.just_begun() {

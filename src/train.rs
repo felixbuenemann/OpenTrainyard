@@ -117,7 +117,7 @@ pub fn spawn_cosmetic_trains_event(
 ) {
     for event in spawn_cosmetic_train_event_reader.read() {
         // Get the board data using ev.board_id on the query:
-        let (board_entity, board_dimensions, board_tick_status) = board_q.get(event.board_id).unwrap();
+        let (_board_entity, board_dimensions, board_tick_status) = board_q.get(event.board_id).unwrap();
 
         let train = event.train;
         let board_id = event.board_id;

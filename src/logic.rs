@@ -19,8 +19,6 @@ use crate::board::*;
 
 use crate::tile::TileSpawnData;
 
-use crate::menu_utils::ScrollBarLimits;
-
 
 ////////////////////////////////////////////////////////////////////////////////////
 // COMPONENTS
@@ -332,7 +330,7 @@ pub fn logic_tick(
     mut spawn_cosmetic_train_event_writer: EventWriter<SpawnCosmeticTrainEvent>,
     ) {
         
-    for (board_id, board_dimensions, mut board_tilemap, mut game_state, mut tick_status) in board_q.iter_mut() {    // Really, there's just 1 board
+    for (board_id, _board_dimensions, mut board_tilemap, mut game_state, mut tick_status) in board_q.iter_mut() {    // Really, there's just 1 board
         // If board_hoverable.game_state is NOT running, continue:
         match *game_state { BoardGameState::Running(_) => {}, _ => {continue;}}
         

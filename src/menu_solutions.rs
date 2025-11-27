@@ -10,7 +10,6 @@ use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy_tweening::*;
 use bevy_tweening::lens::TransformPositionLens;
-use bevy_tweening::lens::UiBackgroundColorLens;
 
 use crate::menu_utils::*;
 use crate::board::Rect;
@@ -155,9 +154,9 @@ fn setup_solutions_menu(
     let font_size = 22.;
 
     let window = window_query.single();
-    let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
-    let prev_id = make_button("PREVIOUS LEVEL".to_string(), &mut commands, &font_assets, &button_colors, font_size, left, right , top, bottom, PrevLevelButton, Some(SolutionsMenuBotton));
-    let next_id = make_button("NEXT LEVEL".to_string(), &mut commands, &font_assets, &button_colors, font_size, width * percent_left_right + margin/2., width - margin , top, bottom, SolutionsMenuBotton, Some(NextLevelButtonSolutions));
+    let (width, margin, _heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
+    let _prev_id = make_button("PREVIOUS LEVEL".to_string(), &mut commands, &font_assets, &button_colors, font_size, left, right , top, bottom, PrevLevelButton, Some(SolutionsMenuBotton));
+    let _next_id = make_button("NEXT LEVEL".to_string(), &mut commands, &font_assets, &button_colors, font_size, width * percent_left_right + margin/2., width - margin , top, bottom, SolutionsMenuBotton, Some(NextLevelButtonSolutions));
 
 
     let ((l1, r1, b1, t1), (l2, r2, b2, t2), (l3, r3, b3, t3)) = get_sol_commands_coordinates(window);
@@ -165,14 +164,14 @@ fn setup_solutions_menu(
     println!("l2: {}, r2: {}, b2: {}, t2: {}", l2, r2, b2, t2);
     println!("l3: {}, r3: {}, b3: {}, t3: {}", l3, r3, b3, t3);
 
-    let new_id = make_button("DELETE".to_string(), &mut commands, &font_assets, &button_colors, font_size, l1, r1, t1, b1, SolutionsMenuBotton, Some(DeleteSolutionButton));
-    let new_id = make_button("NEW SOLUTION".to_string(), &mut commands, &font_assets, &button_colors, font_size, l2, r2, t2, b2, SolutionsMenuBotton, Some(NewSolutionButton));
-    let clone_id = make_button("CLONE".to_string(), &mut commands, &font_assets, &button_colors, font_size, l3, r3, t3, b3, SolutionsMenuBotton, Some(CloneButton));
+    let _new_id = make_button("DELETE".to_string(), &mut commands, &font_assets, &button_colors, font_size, l1, r1, t1, b1, SolutionsMenuBotton, Some(DeleteSolutionButton));
+    let _new_id = make_button("NEW SOLUTION".to_string(), &mut commands, &font_assets, &button_colors, font_size, l2, r2, t2, b2, SolutionsMenuBotton, Some(NewSolutionButton));
+    let _clone_id = make_button("CLONE".to_string(), &mut commands, &font_assets, &button_colors, font_size, l3, r3, t3, b3, SolutionsMenuBotton, Some(CloneButton));
 
 
     // Upper::
     let ((left_, right_, bottom_, top_), _, _) = get_upper_coordinates(window);
-    let back_id = make_button("BACK".to_string(), &mut commands, &font_assets, &button_colors, 22.*0.8, left_, right_, top_, bottom_, SolutionsMenuBotton, Some(BackButtonSolutions));
+    let _back_id = make_button("BACK".to_string(), &mut commands, &font_assets, &button_colors, 22.*0.8, left_, right_, top_, bottom_, SolutionsMenuBotton, Some(BackButtonSolutions));
 }
 
 
@@ -441,7 +440,7 @@ fn make_board_and_title(
         let w = window_query.single();
         // Get width:
         let width = w.width();
-        let height = w.height();
+        let _height = w.height();
         // Delete board:
         for board_id in board_q.iter() {
             if let Some(id) = commands.get_entity(board_id) { id.despawn_recursive();}
@@ -490,14 +489,14 @@ fn make_board_and_title(
 
         // Spawn the level name BUTTON:
         let (_, (left_, right_, bottom_, top_), _) = get_upper_coordinates(w);
-        let name_id = make_text(ev.level_name.clone(), &mut commands, &font_assets, &button_colors, 20., left_, right_, top_, bottom_, SolutionsMenuBotton, Some(LevelNameElem));
+        let _name_id = make_text(ev.level_name.clone(), &mut commands, &font_assets, &button_colors, 20., left_, right_, top_, bottom_, SolutionsMenuBotton, Some(LevelNameElem));
 
         // Spawn the "pick solution" text:
-        let text_id = make_text("  PICK A SOLUTION".to_string(), &mut commands, &font_assets, &button_colors, 20., left_, right_, top_  + width * SCALE * 1.5 + 45., bottom_  + width * SCALE * 1.5 + 45., SolutionsMenuBotton, Some(BestScoreElem));
+        let _text_id = make_text("  PICK A SOLUTION".to_string(), &mut commands, &font_assets, &button_colors, 20., left_, right_, top_  + width * SCALE * 1.5 + 45., bottom_  + width * SCALE * 1.5 + 45., SolutionsMenuBotton, Some(BestScoreElem));
         if player_solutions_data.expert_mode() && !player_solutions_data.just_begun_level(&selected_level.level) {
             let best_solution_data = levels.puzzles.iter().find(|p| p.name == selected_level.level.clone()).unwrap().track_count.clone();
             let besttrack_text = " (BEST TRACK COUNT: ".to_string() + &best_solution_data +")";
-            let bestscore_id = make_text(besttrack_text, &mut commands, &font_assets, &button_colors, 17., left_, right_, top_  + width * SCALE * 1.5 + 45. + 25., bottom_  + width * SCALE * 1.5 + 45. + 25., SolutionsMenuBotton, Some(BestScoreElem));
+            let _bestscore_id = make_text(besttrack_text, &mut commands, &font_assets, &button_colors, 17., left_, right_, top_  + width * SCALE * 1.5 + 45. + 25., bottom_  + width * SCALE * 1.5 + 45. + 25., SolutionsMenuBotton, Some(BestScoreElem));
         }
 
 
@@ -555,7 +554,7 @@ fn _start_animation(
     carousel_state: &mut ResMut<CarouselState>,
 ) {
     // Get the window:
-    let width = window.width() as f32;
+    let _width = window.width() as f32;
     let delta = if go_left { - carousel_state.position_delta.x } else { carousel_state.position_delta.x };
     for (board_id, transform) in board_q.iter() {
         let board_pos = transform.translation;
@@ -576,8 +575,8 @@ fn _start_animation(
             Val::Px(v) => v,
             _ => 0.0,
         };
-        let new_left = current_left + delta;
-        let new_right = current_right - delta;
+        let _new_left = current_left + delta;
+        let _new_right = current_right - delta;
         // Use transform animation instead of UiPositionLens which uses deprecated position field
         let start_pos = transform.translation;
         let end_pos = Vec3::new(start_pos.x + delta, start_pos.y, start_pos.z);

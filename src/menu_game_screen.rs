@@ -155,10 +155,10 @@ fn setup_game_menu(
     let window = window_query.single();
     let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
 
-    let erase_id = make_button("ERASE".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, left, right, top - heigh - margin, bottom - heigh - margin, EraseStateButton, Some(MainGameBotton));
-    let undo_id = make_button("UNDO".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, left, right , top, bottom, UndoButton, Some(MainGameBotton));
-    let run_id = make_button("SRTART THE TRAINS!".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, width * percent_left_right + margin/2., width - margin , top, bottom, RunButton, Some(MainGameBotton));
-    let scrollbar_id = make_scrollbar(&mut commands, &textures,
+    let _erase_id = make_button("ERASE".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, left, right, top - heigh - margin, bottom - heigh - margin, EraseStateButton, Some(MainGameBotton));
+    let _undo_id = make_button("UNDO".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, left, right , top, bottom, UndoButton, Some(MainGameBotton));
+    let _run_id = make_button("SRTART THE TRAINS!".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, width * percent_left_right + margin/2., width - margin , top, bottom, RunButton, Some(MainGameBotton));
+    let _scrollbar_id = make_scrollbar(&mut commands, &textures,
         &font_assets, FONT_SIZE,
         ScrollBarLimits { max: 2000., min: 4., current: 0., step: 0.01},
         &button_colors,  // ^ IMPORTANT note: This is now REVERSED!! (max is on the Left and min is on the Right)
@@ -167,10 +167,10 @@ fn setup_game_menu(
         MainGameBotton);
     // Next level:
     let (_, _, (left_, right_, bottom_, top_)) = get_upper_coordinates(window);
-    let next_level_id = make_button("NEXT LEVEL".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE * 0.80, left_, right_, top_, bottom_, MainGameBotton, Some(NextLevelButton));
+    let _next_level_id = make_button("NEXT LEVEL".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE * 0.80, left_, right_, top_, bottom_, MainGameBotton, Some(NextLevelButton));
     // Back:
     let ((left_, right_, bottom_, top_), _, _) = get_upper_coordinates(window);
-    let back_id = make_button("BACK".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE * 0.80, left_, right_, top_, bottom_, MainGameBotton, Some(BackButton));
+    let _back_id = make_button("BACK".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE * 0.80, left_, right_, top_, bottom_, MainGameBotton, Some(BackButton));
 
 
 }
@@ -220,7 +220,7 @@ fn init_gmae(
     let window = window_query.single();
     // Spawn the level name BUTTON:
     let (_, (left_, right_, bottom_, top_), _) = get_upper_coordinates(window);
-    let name_id = make_text(selected_level.level.clone(), &mut commands, &font_assets, &button_colors, FONT_SIZE, left_, right_, top_, bottom_, MainGameBotton, Some(LevelNameElem));
+    let _name_id = make_text(selected_level.level.clone(), &mut commands, &font_assets, &button_colors, FONT_SIZE, left_, right_, top_, bottom_, MainGameBotton, Some(LevelNameElem));
 
     change_level(&selected_level, &player_solutions_data,  &board_q, &mut commands, &mut board_event_writer, &level_name_query, window, &mut text_query, &mut popup_query);
 
@@ -243,9 +243,9 @@ fn click_nextlevel_button(
     // Windows:
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     // Fonts:
-    font_assets: Res<FontAssets>,
+    _font_assets: Res<FontAssets>,
     // Button colors:
-    button_colors: Res<ButtonColors>,
+    _button_colors: Res<ButtonColors>,
     mut text_query: Query<&mut Text, With<TextElem>>,
     player_solutions_data: Res<SolutionsSavedData>,
     mut solved_data_event_writer: EventWriter<SelectedLevelSolvedDataEvent>,
@@ -292,7 +292,7 @@ fn click_back_button(
     mut solved_data_event_writer: EventWriter<SelectedLevelSolvedDataEvent>,
     mut selected_level: ResMut<SelectedLevel>,
 ) {
-    for (interaction, color) in &mut interaction_query {
+    for (interaction, _color) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
                 // Serialize the current map:
@@ -345,14 +345,14 @@ fn click_undo_button(
         >,
     mut board_q: Query<(Entity, &mut BoardHoverable, &BoardGameState, &mut BoardTileMap), With<Board>>,
 ) {
-    for (interaction, color) in &mut interaction_query {
+    for (interaction, _color) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
                 for (_, mut board_hoverable, hovering_state, mut board_tile_map) in board_q.iter_mut() {
                     // if hovering_state is Running, continue:
                     if let BoardGameState::Running(_) = *hovering_state {continue;}
                     let last_event = board_hoverable.history.history.pop();
-                    if let Some(TileSpawnData { x, y, new_tile, prev_tile }) = last_event {
+                    if let Some(TileSpawnData { x, y, new_tile: _, prev_tile }) = last_event {
                         if let Some(prev_tile) = prev_tile {
                             board_tile_map.map[y as usize][x as usize] = prev_tile;
                         }
@@ -408,8 +408,8 @@ pub fn style_run_button(
                     if let Some(id) = commands.get_entity(entity) { id.despawn_recursive();}
                 }
                 // Rebuild:
-                let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
-                let run_id = make_button("BACK TO THE DRAWING BOARD".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, width * percent_left_right + margin/2., width - margin , top, bottom, RunButton, Some(MainGameBotton));
+                let (width, margin, _heigh, percent_left_right, _left, _right, bottom, top) = get_coordinates(window);
+                let _run_id = make_button("BACK TO THE DRAWING BOARD".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, width * percent_left_right + margin/2., width - margin , top, bottom, RunButton, Some(MainGameBotton));
 
             },
             _ => {
@@ -418,8 +418,8 @@ pub fn style_run_button(
                     if let Some(id) = commands.get_entity(entity) { id.despawn_recursive();}
                 }
                 // Rebuild:
-                let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
-                let run_id = make_button("START THE TRAINS!".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, width * percent_left_right + margin/2., width - margin , top, bottom, RunButton, Some(MainGameBotton));
+                let (width, margin, _heigh, percent_left_right, _left, _right, bottom, top) = get_coordinates(window);
+                let _run_id = make_button("START THE TRAINS!".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, width * percent_left_right + margin/2., width - margin , top, bottom, RunButton, Some(MainGameBotton));
             }
         }
     }
@@ -472,15 +472,15 @@ fn add_running_status_indicator(
         // Make new ones:
         match *hovering_state {
             BoardGameState::Running(RunningState::Crashed) => {
-                let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
+                let (_width, margin, heigh, _percent_left_right, left, right, bottom, top) = get_coordinates(window);
                 make_rect_with_colored_text("status:\n".to_string(), "CRASHED".to_string(), Color::srgb(1.0, 0.0, 0.0), &mut commands, &font_assets, &button_colors, FONT_SIZE, left, right, top - heigh - margin, bottom  - 2. *heigh - margin, RunningGameStateDisplay, Some(MainGameBotton));
             },
             BoardGameState::Running(RunningState::Won) => {
-                let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
+                let (_width, margin, heigh, _percent_left_right, left, right, bottom, top) = get_coordinates(window);
                 make_rect_with_colored_text("status:\n".to_string(), "COMPLETED".to_string(), Color::srgb(0.0, 1.0, 0.0), &mut commands, &font_assets, &button_colors, FONT_SIZE, left, right, top - heigh - margin, bottom  - 2. *heigh - margin, RunningGameStateDisplay, Some(MainGameBotton));
             },
             BoardGameState::Running(RunningState::Started) => {
-                let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
+                let (_width, margin, heigh, _percent_left_right, left, right, bottom, top) = get_coordinates(window);
                 make_rect_with_colored_text("status:\n".to_string(), "RUNNING".to_string(), Color::srgb(0.0, 1.0, 0.0), &mut commands, &font_assets, &button_colors, FONT_SIZE, left, right, top - heigh - margin, bottom  - 2. *heigh - margin, RunningGameStateDisplay, Some(MainGameBotton));            }
 
             _ => {}
@@ -494,7 +494,7 @@ fn show_track_number_in_title_text(
     mut text_query: Query<&mut Text, With<TextElem>>,
     selected_level: Res<SelectedLevel>,
 ) {
-    for (board_tilemap, board_game_state, board_hoverable) in board_q.iter() {
+    for (board_tilemap, _board_game_state, board_hoverable) in board_q.iter() {
         for mut text in text_query.iter_mut() {
             match board_hoverable {
                 BoardHoverable {hovered_pos_1: Some(_), hovered_pos_2: Some(_), history: _}
@@ -529,8 +529,8 @@ fn change_level(
         board_q: &Query<Entity, With<Board>>,
         commands: &mut Commands,
         board_event_writer: &mut EventWriter<BoardEvent>,
-        level_name_query: &Query<Entity,  With<LevelNameElem>>,
-        window: &Window,
+        _level_name_query: &Query<Entity,  With<LevelNameElem>>,
+        _window: &Window,
         // Query mut TextElem:
         text_query: &mut Query<&mut Text, With<TextElem>>,
         popup_query: &mut Query<Entity, With<Popup>>,

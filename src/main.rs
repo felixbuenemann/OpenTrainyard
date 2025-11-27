@@ -50,7 +50,7 @@ use bevy_pkv::PkvStore;
 
 
 // Button action type
-#[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
+#[cfg_attr(feature = "dev", derive(bevy_inspector_egui::Inspectable))]
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Component)] 
 pub enum ButtonAction {Clear,Generate}
 
@@ -85,7 +85,7 @@ pub enum GameState {
 fn setup_camera(mut commands: Commands) {
     // commands.spawn(OrthographicCameraBundle::new_2d());  // 2D orthographic camera
     // commands.spawn(UiCameraBundle::default());  // UI Camera
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 }
 
 

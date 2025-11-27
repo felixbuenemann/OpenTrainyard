@@ -130,7 +130,7 @@ fn add_color_minitiles_children(
     orig_len: i8,
     is_start: bool,
     assets: &TileAssets,
-    big_tile_size: f32,
+    _big_tile_size: f32,
 ) {
     // let scale = big_tile_size / 46.;
     let (n, poss, small_tile_size) = if orig_len == 1 {
@@ -176,7 +176,6 @@ fn get_transform_and_texture(
     assets: &TileAssets,
 ) -> (Handle<Image>, Transform) {
     let transform = Transform::from_xyz(0., 0., 1.);
-    let texture_path: String;
     // Print the tile:
     let (texture_path, transform): (String, Transform) = match t {
         Tile::SingleTrackTile { track: _ }
@@ -262,7 +261,7 @@ fn get_transform_and_texture(
                 }
             }
         }
-        Tile::PaintTile { track, c } => {
+        Tile::PaintTile { track, c: _ } => {
             if track.b_ && track.t_ {
                 (
                     "p_outer_str_lr.png".to_string(),
@@ -293,7 +292,7 @@ fn get_transform_and_texture(
         }
         Tile::EmptyTile => ("empty.png".to_string(), transform),
         Tile::RockTile => ("rock.png".to_string(), transform),
-        Tile::SplitTile { side_in } => match &print_tile(&t)[..] {
+        Tile::SplitTile { side_in: _ } => match &print_tile(&t)[..] {
             "D1" => ("scissor_u.png".to_string(), Transform::from_xyz(0., 0., 2.)),
             "D2" => ("scissor_u.png".to_string(), rotate_tile_90(Transform::from_xyz(0., 0., 2.), 2)),
             "D3" => ("scissor_u.png".to_string(), rotate_tile_90(Transform::from_xyz(0., 0., 2.), 1)),
@@ -321,7 +320,7 @@ fn add_arrow_minitile_children(
     child_cmd: &mut ChildBuilder,
     dir: Side,
     assets: &TileAssets,
-    big_tile_size: f32,
+    _big_tile_size: f32,
 ) {
     // let scale = big_tile_size / 46.;
     let arrow = get_asset("s_arrow_elem_rigth.png".to_string(), assets);
@@ -364,9 +363,9 @@ fn add_funnels_minitile_children(
     l_: bool,
     r_: bool,
     assets: &TileAssets,
-    big_tile_size: f32,
+    _big_tile_size: f32,
 ) {
-    // let scale = big_tile_size / 45.;
+    // let scale = _big_tile_size / 45.;
     let funnel = get_asset("e_funnel_elem_rigth.png".to_string(), assets);
     if r_ {
         let mut t = Transform::from_xyz(0., 0., 0.5);
@@ -483,7 +482,7 @@ pub fn make_tile(
             .with_children(
                 partial!(add_funnels_minitile_children => _, t_, b_, l_, r_, assets, big_tile_size),
             );
-    } else if let Tile::PaintTile { track, c } = t {
+    } else if let Tile::PaintTile { track: _, c } = t {
         child.with_children(|parent| {
             let inner = get_asset(format!("p_{}.png", colorz_to_long_str(c)), assets);
             parent.spawn((

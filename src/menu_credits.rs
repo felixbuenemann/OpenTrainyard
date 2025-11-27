@@ -45,9 +45,9 @@ fn setup_menu_credits(
     mut commands: Commands,
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
-    textures: Res<TileAssets>,
+    _textures: Res<TileAssets>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
-    tile_assets: Res<TileAssets>,
+    _tile_assets: Res<TileAssets>,
 ) {
     let window = window_query.single();
     let width = window.width();
@@ -90,14 +90,14 @@ fn setup_menu_credits(
 
     let margin_left = 13.;
     let rect_height = 35.;
-    let offset_x = 0.;
+    let _offset_x = 0.;
     let offset_y = - height * 0.38;
     // Boundaries (left right top bottom) of a Rectangle that is Centered in the window:
     let left = margin_left;
     let right = margin_left + 100.;
     let top = height / 2. - rect_height / 2. + offset_y;
     let bottom = height / 2. - rect_height * 1.5 + offset_y;
-    let startbutton_id = make_button("BACK".to_string(), &mut commands, &font_assets, &button_colors, 22. * 0.8, left, right, top, bottom, BackButtonCredits, Option::<BackButtonCredits>::None);
+    let _startbutton_id = make_button("BACK".to_string(), &mut commands, &font_assets, &button_colors, 22. * 0.8, left, right, top, bottom, BackButtonCredits, Option::<BackButtonCredits>::None);
 }
 
 
