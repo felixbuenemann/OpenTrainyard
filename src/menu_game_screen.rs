@@ -437,7 +437,7 @@ fn add_borders(
     for hovering_state in board_q.iter() {
         // Despawn all the borders:
         for elem in elems.iter() {
-            if let Ok(mut id) = commands.get_entity(elem) { id.despawn();}
+            commands.entity(elem).try_despawn();
         }
         // Make new ones:
         match *hovering_state {
