@@ -212,6 +212,7 @@ pub fn scrollbar_input_handler(
 
 pub fn scrollbar_dragging_handler(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    touches: Res<Touches>,
     mut interaction_query: Query<(
         &mut Node,
         &mut ScrollBarPosition,
@@ -225,7 +226,10 @@ pub fn scrollbar_dragging_handler(
     {
         if sbstatus.dragging {
             let window = window_query.single().unwrap();
-            if let Some(pos) = window.cursor_position() {
+            // Use cursor position for mouse, fall back to touch position
+            let pos = window.cursor_position()
+                .or_else(|| touches.iter().next().map(|t| t.position()));
+            if let Some(pos) = pos {
                 let handle_x = (sbpos.max_x - sbpos.min_x) * 0.30;
 
                 let relposx = pos.x - sbpos.min_x - handle_x / 2.;
@@ -249,8 +253,6 @@ pub fn scrollbar_dragging_handler(
         }
     }
 }
-
-
 
 
 
