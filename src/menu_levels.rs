@@ -39,8 +39,8 @@ impl Plugin for MenuLevelsPlugin {
             .insert_resource(MenuLimits{..default()})
             .add_systems(OnExit(GameState::MenuLevels), cleanup_menu_levels)
             // Event FullClickHappened:
-            .add_event::<FullClickHappened>()
-            .add_event::<ScrollHappened>()
+            .add_message::<FullClickHappened>()
+            .add_message::<ScrollHappened>()
             ;
     }
 }
@@ -96,7 +96,7 @@ fn setup_menu_levels(
 ) {
     println!("YES IM HERE. good...");
     println!("Fingerss?????????");
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     let width = window.width();
     let height = window.height();
 
@@ -227,7 +227,7 @@ const TRACKPAD_SPEED_MULTIPLIER: f32 = 0.8;
 
 // Listen to scrollwheenl events:
 fn scroll_events_levels_mouse(
-    mut scroll_evr: EventReader<MouseWheel>,
+    mut scroll_evr: MessageReader<MouseWheel>,
     mut button_query: Query<(&mut Node, &LevelButton),(With<Button>, With<LevelButton>),>,
     // resource:
     mut menu_limits: ResMut<MenuLimits>,
@@ -259,7 +259,7 @@ const TOUCH_SWIPE_SPEED_DECAY: f32 = 0.04;
 fn scroll_events_levels_touch(
     mut current_vy: Local<Option<f32>>,
     mut button_query: Query<(&mut Node, &LevelButton),(With<Button>, With<LevelButton>),>,
-    mut scroll_evr: EventReader<ScrollHappened>,
+    mut scroll_evr: MessageReader<ScrollHappened>,
     // touches: Res<Touches>,
     mut menu_limits: ResMut<MenuLimits>,
 ) {
@@ -295,14 +295,14 @@ fn scroll_events_levels_touch(
 
 // Listen to event:
 fn handle_full_click(
-    mut full_click_happened_reader: EventReader<FullClickHappened>,
+    mut full_click_happened_reader: MessageReader<FullClickHappened>,
     mut next_state: ResMut<NextState<GameState>>,
     selected_level: Res<SelectedLevel>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
     for ev in full_click_happened_reader.read() {
         info!("YEEEE Successfull Click!!! : ");
-        let window = window_query.single();
+        let window = window_query.single().unwrap();
         let height = window.height();
         if selected_level.level != "" && ev.pos.y < height / 2. - BANNER_HEIGHT
         {
@@ -324,11 +324,11 @@ fn cleanup_menu_levels(
 ) {
     // For button in query:
     for button in buttons.iter() { // It's never more than 1, but can very well be 0
-        if let Some(id) = commands.get_entity(button) {id.despawn_recursive();}
+        if let Ok(mut id) = commands.get_entity(button) {id.despawn();}
     }
     // For button in query:
     for button in banners.iter() { // It's never more than 1, but can very well be 0
-        if let Some(id) = commands.get_entity(button) {id.despawn_recursive();}
+        if let Ok(mut id) = commands.get_entity(button) {id.despawn();}
     }
 }
 
@@ -376,7 +376,7 @@ pub fn make_top_banner(
             ..default()
         },
         TextColor(Color::srgb(0.9, 0.9, 0.9)),
-        TextLayout::new_with_justify(JustifyText::Center),
+        TextLayout::new_with_justify(Justify::Center),
         Node {
             position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
@@ -437,7 +437,7 @@ pub fn make_menu_elem(
                 ..default()
             },
             TextColor(Color::srgb(0.9, 0.9, 0.9)),
-            TextLayout::new_with_justify(JustifyText::Left),
+            TextLayout::new_with_justify(Justify::Left),
             Node {
                 margin: UiRect{left: Val::Px(20.), ..default()},
                 ..default()
@@ -465,7 +465,7 @@ pub fn make_menu_elem(
                     ..default()
                 },
                 TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                TextLayout::new_with_justify(JustifyText::Right),
+                TextLayout::new_with_justify(Justify::Right),
                 Node {
                     align_items: AlignItems::FlexEnd,
                     margin: UiRect{left: Val::Px(2.), right: Val::Px(20.), ..default()},

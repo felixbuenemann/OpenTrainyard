@@ -49,7 +49,7 @@ pub struct CosmeticTrain {} // For vfx of train disappearing
 // EVENTS
 /////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct SpawnCosmeticTrainEvent {
     pub train: Train,
     pub board_id: Entity,
@@ -71,8 +71,8 @@ pub fn respawn_trains(
     for (board_id, board_dimensions, board_tilemap, board_tick_status) in board_q.iter() {
         // Despawn existing trains
         for train_entity in trains_q.iter() {
-            if let Some(train) = commands.get_entity(train_entity) {
-                train.despawn_recursive();
+            if let Ok(mut train) = commands.get_entity(train_entity) {
+                train.despawn();
             }
         }
         // Spawn new trains
@@ -110,7 +110,7 @@ pub fn move_trains(
 
 pub fn spawn_cosmetic_trains_event(
     mut commands: Commands,
-    mut spawn_cosmetic_train_event_reader: EventReader<SpawnCosmeticTrainEvent>,
+    mut spawn_cosmetic_train_event_reader: MessageReader<SpawnCosmeticTrainEvent>,
     train_assets: Res<TrainAssets>,
     tick_params: Res<TicksInATick>,
     board_q: Query<(Entity, &BoardDimensions, &BoardTickStatus), With<Board>>,
@@ -129,11 +129,15 @@ pub fn spawn_cosmetic_trains_event(
 
 pub fn delete_cosmetic_trains_with_finished_animations(
     mut commands: Commands,
-    trains_q: Query<(Entity, &Train, &Animator<Transform>), With<CosmeticTrain>>,
+    trains_q: Query<(Entity, &Train, &TweenAnim), With<CosmeticTrain>>,
 ) {
     for (train_entity, _, animator) in trains_q.iter() {
-        if animator.tweenable().progress() == 1.0 {
-            if let Some(train) = commands.get_entity(train_entity) {train.despawn_recursive();}
+        // Check if animation is completed by comparing elapsed time with total duration
+        let tweenable = animator.tweenable();
+        if let bevy_tweening::TotalDuration::Finite(total) = tweenable.total_duration() {
+            if tweenable.elapsed() >= total {
+                if let Ok(mut train) = commands.get_entity(train_entity) {train.despawn();}
+            }
         }
     }
 }
@@ -240,8 +244,8 @@ pub fn make_train_cosmetic(train: Train, commands: &mut Commands, train_assets: 
             ..default()
         },
         CosmeticTrain{},
-        Animator::new(t1),
-        Animator::new(t2),
+        TweenAnim::new(t1),
+        TweenAnim::new(t2),
     ));
 
     return child.id();

@@ -41,7 +41,7 @@ pub struct ScrollBarLimits {
 }
 
 // Wrapper event for ScrollBarLimits since it can't be both Component and Event
-#[derive(Debug, Clone, PartialEq, Copy, Default, Event)]
+#[derive(Debug, Clone, PartialEq, Copy, Default, Message)]
 pub struct ScrollBarLimitsEvent {
     pub limits: ScrollBarLimits,
 }
@@ -138,12 +138,12 @@ pub struct PopupTimer {
 /////////////////////////////////////////////////////////////////////////////////////
 
 
-#[derive(Debug, Copy, Clone, Event)]
+#[derive(Debug, Copy, Clone, Message)]
 pub struct FullClickHappened {
     pub pos: Vec2
 }
 
-#[derive(Debug, Copy, Clone, Event)]
+#[derive(Debug, Copy, Clone, Message)]
 pub struct ScrollHappened {
     pub vx: f32,
     pub vy: f32
@@ -220,13 +220,13 @@ pub fn scrollbar_dragging_handler(
         &mut ScrollBarLimits,
         &mut ScrollBarStatus,
     )>,
-    mut dragged_event_writer: EventWriter<ScrollBarLimitsEvent>,
+    mut dragged_event_writer: MessageWriter<ScrollBarLimitsEvent>,
 ) {
     for (_transform, _gltr, mut node, mut sbpos, mut sblimits, sbstatus) in
         interaction_query.iter_mut()
     {
         if sbstatus.dragging {
-            let window = window_query.single();
+            let window = window_query.single().unwrap();
             if let Some(pos) = window.cursor_position() {
                 let handle_x = (sbpos.max_x - sbpos.min_x) * 0.30;
 
@@ -245,7 +245,7 @@ pub fn scrollbar_dragging_handler(
                 // launch event:
                 if newval != sblimits.current {
                     sblimits.current = newval;
-                    dragged_event_writer.send(ScrollBarLimitsEvent { limits: *sblimits });
+                    dragged_event_writer.write(ScrollBarLimitsEvent { limits: *sblimits });
                 }
             }
         }
@@ -261,10 +261,10 @@ pub fn handle_gesture_mouse(
     mouse_input: Res<ButtonInput<MouseButton>>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut click_position: Local<ClickPosition>,
-    mut full_click_happened_writer: EventWriter<FullClickHappened>,
-    mut scroll_happened_writer: EventWriter<ScrollHappened>,
+    mut full_click_happened_writer: MessageWriter<FullClickHappened>,
+    mut scroll_happened_writer: MessageWriter<ScrollHappened>,
 ) {
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     if mouse_input.any_just_released([MouseButton::Left, MouseButton::Right]) {
         _touch_event_handler(window, &mut click_position, ClickState::JustReleased, &mut full_click_happened_writer, &mut scroll_happened_writer);
     }
@@ -281,10 +281,10 @@ pub fn handle_gesture_touch(
     touches: Res<Touches>,
     mut click_position: Local<ClickPosition>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
-    mut full_click_happened_writer: EventWriter<FullClickHappened>,
-    mut scroll_happened_writer: EventWriter<ScrollHappened>,
+    mut full_click_happened_writer: MessageWriter<FullClickHappened>,
+    mut scroll_happened_writer: MessageWriter<ScrollHappened>,
 ) {
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     for finger in touches.iter() {
         if touches.just_released(finger.id()) {
             _touch_event_handler(window, &mut click_position, ClickState::JustReleased, &mut full_click_happened_writer, &mut scroll_happened_writer);
@@ -311,7 +311,7 @@ pub fn advance_tick(
     if let Some(timer) = popup_state.timer.as_mut() {
         timer.tick(time.delta());
         // If is finished:
-        if timer.finished() {
+        if timer.is_finished() {
             // Spawn a tutorial popup:
             match popup_state.popup_type {
                 PopupType::Tutorial => {
@@ -338,8 +338,8 @@ pub fn cleanup_popup(
     for interaction in interaction_query.iter_mut() {
         if *interaction == Interaction::Pressed {
             for tutorial_id in tutorial_query.iter() {
-                if let Some(entity) = commands.get_entity(tutorial_id) {
-                    entity.despawn_recursive();
+                if let Ok(mut entity) = commands.get_entity(tutorial_id) {
+                    entity.despawn();
                 }
             }
             // commands.remove_resource::<PopupTimer>();
@@ -361,8 +361,8 @@ fn _touch_event_handler(
     window: &Window,
     click_position: &mut ClickPosition,
     state: ClickState,
-    full_click_happened_writer: &mut EventWriter<FullClickHappened>,
-    scroll_happened_writer: &mut EventWriter<ScrollHappened>
+    full_click_happened_writer: &mut MessageWriter<FullClickHappened>,
+    scroll_happened_writer: &mut MessageWriter<ScrollHappened>
 ) {
     let pos = window.cursor_position();
     let window_size = Vec2::new(window.width(), window.height());
@@ -382,7 +382,7 @@ fn _touch_event_handler(
                 let last_pos = click_position.last_hovered_pos.unwrap();
                 let new_pos = clicked_pos.unwrap();
                 let delta = new_pos - last_pos;
-                scroll_happened_writer.send(ScrollHappened{vx: delta.x, vy: delta.y});
+                scroll_happened_writer.write(ScrollHappened{vx: delta.x, vy: delta.y});
             }
             click_position.last_hovered_pos = clicked_pos;
         }
@@ -390,7 +390,7 @@ fn _touch_event_handler(
             if click_position.clicked_pos.is_some() && click_position.last_hovered_pos.is_some() && distance(&click_position.clicked_pos.unwrap(), &click_position.last_hovered_pos.unwrap()) < 5.
             {
                 info!("YEEEE Successfull Click!!! : pos{:?}", clicked_pos);
-                full_click_happened_writer.send(FullClickHappened{pos: click_position.clicked_pos.unwrap()});
+                full_click_happened_writer.write(FullClickHappened{pos: click_position.clicked_pos.unwrap()});
             }
             else{
                 info!("NOO Aborted Click!!! : pos{:?}", clicked_pos);
@@ -440,7 +440,7 @@ pub fn make_scrollbar(
             ..default()
         },
         TextColor(Color::srgb(0.9, 0.9, 0.9)),
-        TextLayout::new_with_justify(JustifyText::Center),
+        TextLayout::new_with_justify(Justify::Center),
         Node {
             margin: UiRect{left: Val::Percent(5.), ..default()},
             ..default()
@@ -576,7 +576,7 @@ pub fn make_rect_with_colored_text(
                 ..default()
             },
             TextColor(Color::srgb(0.9, 0.9, 0.9)),
-            TextLayout::new_with_justify(JustifyText::Center),
+            TextLayout::new_with_justify(Justify::Center),
         ));
     });
     ec.insert(type1);
@@ -624,7 +624,7 @@ pub fn make_text(
                 ..default()
             },
             TextColor(Color::srgb(0.9, 0.9, 0.9)),
-            TextLayout::new_with_justify(JustifyText::Center),
+            TextLayout::new_with_justify(Justify::Center),
             TextElem{},
         ));
     });
@@ -670,7 +670,7 @@ pub fn make_tutorial_popup(
             ..default()
         },
         TextColor(Color::srgba(0.9, 0.9, 0.9, 0.9)),
-        TextLayout::new_with_justify(JustifyText::Center),
+        TextLayout::new_with_justify(Justify::Center),
         Node {
             margin: UiRect{top: Val::Percent(-13.), ..default()},
             ..default()
@@ -686,7 +686,7 @@ pub fn make_tutorial_popup(
                 ..default()
             },
             TextColor(Color::srgb(0.6, 0.6, 0.6)),
-            TextLayout::new_with_justify(JustifyText::Center),
+            TextLayout::new_with_justify(Justify::Center),
             Node {
                 position_type: PositionType::Absolute,
                 // Button (centered horizontally, 40% of width., bottom vertically)
@@ -776,7 +776,7 @@ pub fn make_victory_popup(
             ..default()
         },
         TextColor(Color::srgba(0.9, 0.9, 0.9, 0.9)),
-        TextLayout::new_with_justify(JustifyText::Left),
+        TextLayout::new_with_justify(Justify::Left),
         Node {
             position_type: PositionType::Absolute,
             left: Val::Percent(55.),
@@ -859,7 +859,7 @@ pub fn make_victory_popup(
             ..default()
         },
         Transform::default().with_scale(Vec3 { x: 0., y: 0., z: 10. }),
-        Animator::new(Tween::new(
+        TweenAnim::new(Tween::new(
                 EaseFunction::CubicIn, Duration::from_millis(400 as u64),
                 TransformScaleLens {start: Vec3 { x: 0., y: 0., z: 10. }, end: Vec3 { x: 1.9, y: 1.9, z: 10. },},
             )

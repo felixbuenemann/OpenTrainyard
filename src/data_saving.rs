@@ -135,7 +135,7 @@ pub struct DataToInsert{
 }
 
 
-#[derive(Debug, Clone, Eq, PartialEq, Event)]
+#[derive(Debug, Clone, Eq, PartialEq, Message)]
 pub struct SelectedLevelSolvedDataEvent {
     pub data: Option<DataToInsert>  // IF NONE, it will be TAKEN FROM THE SELECTED LEVEL RESOURCE
 }
@@ -148,7 +148,7 @@ pub struct SelectedLevelSolvedDataEvent {
 pub fn save_player_data(
     mut pkv: ResMut<PkvStore>,
     mut player_solutions_data: ResMut<SolutionsSavedData>,
-    mut level_solved_events: EventReader<SelectedLevelSolvedDataEvent>,
+    mut level_solved_events: MessageReader<SelectedLevelSolvedDataEvent>,
     selected_level: ResMut<SelectedLevel>,
 ) {
     for ev in level_solved_events.read() {

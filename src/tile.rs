@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::ecs::hierarchy::ChildSpawnerCommands;
 
 use crate::simulator::*;
 use crate::utils::Coordinates;
@@ -38,7 +39,7 @@ pub struct TileSpawnData {  // It was called Event!
     pub new_tile: Tile,
     pub prev_tile: Option<Tile>,
 }
-// mut evt: EventReader<TileSpawnEvent>,
+// mut evt: MessageReader<TileSpawnEvent>,
 // mut spawn_event: EventWriter<TileSpawnEvent>,
 
 
@@ -54,7 +55,7 @@ pub fn spawn_tile(
 ) {
     for (board_id, board_dimensions, board_tilemap, children) in board_q.iter_mut() {
         // `children` is a collection of Entity IDs
-        for &child in children.iter() {
+        for child in children.iter() {
             // get the health of each child unit
             if let Ok((tile_entity, coordinates, tile)) = tile_q.get(child)
             {
@@ -62,7 +63,7 @@ pub fn spawn_tile(
                     // Remove parent/child relationship:
                     commands.entity(board_id).remove_children(&[tile_entity]);
                     // despawn tile entity:
-                    commands.entity(tile_entity).despawn_recursive();
+                    commands.entity(tile_entity).despawn();
                     // Create new tile:
                     let size = board_dimensions.tile_size;
                     let coordinates = Coordinates { x: coordinates.x as u16, y: coordinates.y as u16,};
@@ -125,7 +126,7 @@ fn rotate_tile_90(mut t: Transform, times: i16) -> Transform {
 }
 
 fn add_color_minitiles_children(
-    child_cmd: &mut ChildBuilder,
+    child_cmd: &mut ChildSpawnerCommands,
     elems: VectorOfColorz,
     orig_len: i8,
     is_start: bool,
@@ -317,7 +318,7 @@ fn get_transform_and_texture(
 }
 
 fn add_arrow_minitile_children(
-    child_cmd: &mut ChildBuilder,
+    child_cmd: &mut ChildSpawnerCommands,
     dir: Side,
     assets: &TileAssets,
     _big_tile_size: f32,
@@ -357,7 +358,7 @@ fn add_arrow_minitile_children(
 
 
 fn add_funnels_minitile_children(
-    child_cmd: &mut ChildBuilder,
+    child_cmd: &mut ChildSpawnerCommands,
     t_: bool,
     b_: bool,
     l_: bool,

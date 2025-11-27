@@ -10,7 +10,7 @@ use crate::menu_utils::{PopupTimer, PopupType, ScrollBarLimitsEvent};
 use crate::simulator::*;
 use crate::train::SpawnCosmeticTrainEvent;
 
-use bevy::utils::Instant;
+use std::time::Instant;
 // use std::time::Instant;
 
 use crate::utils::{Coordinates, SelectedLevel};
@@ -55,12 +55,12 @@ pub enum TickMoment {
 }
 
 
-#[derive(Debug, Clone, PartialEq, Event)]
+#[derive(Debug, Clone, PartialEq, Message)]
 pub struct DoubleClickEvent {
     pub pos: Vec2,
 }
 
-#[derive(Debug, Clone, PartialEq, Event)]
+#[derive(Debug, Clone, PartialEq, Message)]
 pub enum TileHoverEvent {
     Newhover(Vec2),
     Released
@@ -75,7 +75,7 @@ pub enum TileHoverEvent {
 
 pub fn change_tick_speed(
     // Liste to events of type ScrollBarLimitsEvent:
-    mut scroll_bar_limits_event_reader: EventReader<ScrollBarLimitsEvent>,
+    mut scroll_bar_limits_event_reader: MessageReader<ScrollBarLimitsEvent>,
     mut board_q: Query<&mut BoardTickStatus, With<Board>>,
     mut tick_params: ResMut<TicksInATick>,
 ){
@@ -97,11 +97,11 @@ pub fn change_tick_speed(
 }
 
 
-pub fn tile_hover_touch(touches: Res<Touches>, window_query: Query<&Window, With<bevy::window::PrimaryWindow>>, mut hover_event: EventWriter<TileHoverEvent>,) {
-    let window = window_query.single();
+pub fn tile_hover_touch(touches: Res<Touches>, window_query: Query<&Window, With<bevy::window::PrimaryWindow>>, mut hover_event: MessageWriter<TileHoverEvent>,) {
+    let window = window_query.single().unwrap();
     for finger in touches.iter() {
         if touches.just_released(finger.id()) {
-            hover_event.send(TileHoverEvent::Released);
+            hover_event.write(TileHoverEvent::Released);
             break;
         }
         else {
@@ -109,28 +109,28 @@ pub fn tile_hover_touch(touches: Res<Touches>, window_query: Query<&Window, With
             let window_size = Vec2::new(window.width(), window.height());
             // Convert screen coords to world coords (flip Y axis)
             let pos = Vec2::new(pos.x - window_size.x / 2., window_size.y / 2. - pos.y);
-            hover_event.send(TileHoverEvent::Newhover(pos));
+            hover_event.write(TileHoverEvent::Newhover(pos));
         }
     }
 }
 
-pub fn tile_hover_mouse(mouse_input: Res<ButtonInput<MouseButton>>, window_query: Query<&Window, With<bevy::window::PrimaryWindow>>, mut hover_event: EventWriter<TileHoverEvent>,) {
-    let window = window_query.single();
+pub fn tile_hover_mouse(mouse_input: Res<ButtonInput<MouseButton>>, window_query: Query<&Window, With<bevy::window::PrimaryWindow>>, mut hover_event: MessageWriter<TileHoverEvent>,) {
+    let window = window_query.single().unwrap();
     if mouse_input.pressed(MouseButton::Left) {
             let pos = match window.cursor_position() { None => return, Some(b) => b, };
             let window_size = Vec2::new(window.width(), window.height());
             // Convert screen coords to world coords (flip Y axis)
             let pos = Vec2::new(pos.x - window_size.x / 2., window_size.y / 2. - pos.y);
-            hover_event.send(TileHoverEvent::Newhover(pos));
+            hover_event.write(TileHoverEvent::Newhover(pos));
     }
     else if mouse_input.any_just_released([MouseButton::Left, MouseButton::Right]) {
-        hover_event.send(TileHoverEvent::Released);
+        hover_event.write(TileHoverEvent::Released);
     }
 }
 
 pub fn tile_hover_event(
         mut board_q: Query<(&BoardDimensions, &mut BoardHoverable, &mut BoardTileMap, &BoardGameState), With<Board>>,
-        mut hover_event: EventReader<TileHoverEvent>,
+        mut hover_event: MessageReader<TileHoverEvent>,
     ) {
     for ev in hover_event.read() {
         // Match the 2 types of event:
@@ -191,14 +191,14 @@ pub fn tile_hover_event(
 pub fn double_click_touch(
     touches: Res<Touches>,
     mut double_click_time: Local<DoubleClickInstant>,
-    mut event_writer: EventWriter<DoubleClickEvent>,
+    mut event_writer: MessageWriter<DoubleClickEvent>,
 ) {
     for finger in touches.iter() {
         if touches.just_pressed(finger.id()) {
             if let Some(double_click_instant) = double_click_time.instant {
                 if double_click_instant.elapsed().as_millis() < 400 && double_click_instant.elapsed().as_millis() > 30 {
                     // println!("DOUBLE CLICK");
-                    event_writer.send(DoubleClickEvent{pos: finger.position() });
+                    event_writer.write(DoubleClickEvent{pos: finger.position() });
                 }
             }
             *double_click_time = DoubleClickInstant{instant: Some(Instant::now())};
@@ -211,16 +211,16 @@ pub fn double_click_mouse(
     mouse_input: Res<ButtonInput<MouseButton>>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut double_click_time: Local<DoubleClickInstant>,
-    mut event_writer: EventWriter<DoubleClickEvent>,
+    mut event_writer: MessageWriter<DoubleClickEvent>,
 ) {
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     if mouse_input.just_pressed(MouseButton::Left) {
         if let Some(double_click_instant) = double_click_time.instant {
             if double_click_instant.elapsed().as_millis() < 400 && double_click_instant.elapsed().as_millis() > 30 {
                 // println!("DOUBLE CLICK");
                 let pos = window.cursor_position();
                 if let Some(pos) = pos {
-                    event_writer.send(DoubleClickEvent{pos: pos});
+                    event_writer.write(DoubleClickEvent{pos: pos});
                 }
             }
         }
@@ -232,9 +232,9 @@ pub fn double_click_mouse(
 pub fn double_click_event(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut board_q: Query<(&BoardDimensions, &mut BoardTileMap, &mut BoardHoverable, &BoardGameState), With<Board>>,
-    mut event_reader: EventReader<DoubleClickEvent>,
+    mut event_reader: MessageReader<DoubleClickEvent>,
 ) {
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     for (board_dimensions, mut board_tile_map, mut board_hoverable, hovering_state) in board_q.iter_mut() { // It's never more than 1, but can very well be 0
         for ev in event_reader.read() {
             let window_size = Vec2::new(window.width(), window.height());
@@ -261,8 +261,8 @@ pub fn listen_to_game_state_changes(
     mut commands: Commands,
     mut board_q: Query<(&mut BoardTileMap, &mut BoardGameState, &mut BoardTickStatus), With<Board>>,
     mut selected_level: ResMut<SelectedLevel>,
-    mut change_board_game_state_event_reader: EventReader<ChangeGameStateEvent>,
-    mut level_solved_data_event_writer: EventWriter<SelectedLevelSolvedDataEvent>,
+    mut change_board_game_state_event_reader: MessageReader<ChangeGameStateEvent>,
+    mut level_solved_data_event_writer: MessageWriter<SelectedLevelSolvedDataEvent>,
     player_solutions_data: Res<SolutionsSavedData>,
     levels: Res<PuzzlesData>, 
     tick_params: Res<TicksInATick>,
@@ -287,7 +287,7 @@ pub fn listen_to_game_state_changes(
                     let index = selected_level.current_index.clone();
                     if index >= selected_level.player_maps.len() as u16 { selected_level.player_maps.push(solution_data); }
                     else { selected_level.player_maps[index as usize] = solution_data; }
-                    level_solved_data_event_writer.send(SelectedLevelSolvedDataEvent{data: None});
+                    level_solved_data_event_writer.write(SelectedLevelSolvedDataEvent{data: None});
 
                     // Trigger a popup:
                     commands.insert_resource(PopupTimer {
@@ -328,8 +328,8 @@ pub fn listen_to_game_state_changes(
 pub fn logic_tick(
     mut board_q: Query<(Entity, &BoardDimensions, &mut BoardTileMap, &mut BoardGameState, &mut BoardTickStatus), With<Board>>,
     tick_params: ResMut<TicksInATick>,
-    mut change_gamestate_event_writer: EventWriter<ChangeGameStateEvent>,
-    mut spawn_cosmetic_train_event_writer: EventWriter<SpawnCosmeticTrainEvent>,
+    mut change_gamestate_event_writer: MessageWriter<ChangeGameStateEvent>,
+    mut spawn_cosmetic_train_event_writer: MessageWriter<SpawnCosmeticTrainEvent>,
     ) {
         
     for (board_id, _board_dimensions, mut board_tilemap, mut game_state, mut tick_status) in board_q.iter_mut() {    // Really, there's just 1 board
@@ -366,8 +366,8 @@ pub fn logic_tick_core(
         trigger_event: TickMoment, 
 
         // Utils needed to spawn events:
-        spawn_cosmetic_train_event_writer: &mut EventWriter<SpawnCosmeticTrainEvent>,
-        change_gamestate_event_writer: &mut EventWriter<ChangeGameStateEvent>,
+        spawn_cosmetic_train_event_writer: &mut MessageWriter<SpawnCosmeticTrainEvent>,
+        change_gamestate_event_writer: &mut MessageWriter<ChangeGameStateEvent>,
         game_state: &mut BoardGameState,
         board_id: &Entity,
     ) -> (Vec<Vec<Tile>>, Vec<Train>){ 
@@ -403,12 +403,12 @@ pub fn logic_tick_core(
 
     ////////////////// Spawn events:
     let cosmetic_trains_to_spawn = newly_collided;
-    for train in cosmetic_trains_to_spawn.iter() { spawn_cosmetic_train_event_writer.send(SpawnCosmeticTrainEvent{train: train.clone(), board_id: board_id.clone()}); }
+    for train in cosmetic_trains_to_spawn.iter() { spawn_cosmetic_train_event_writer.write(SpawnCosmeticTrainEvent{train: train.clone(), board_id: board_id.clone()}); }
     if crashed && (*game_state != BoardGameState::Running(RunningState::Crashed)) {  // This is bc res mut trigger is fired always
         *game_state = BoardGameState::Running(RunningState::Crashed);
     }
     else if completed && (*game_state != BoardGameState::Running(RunningState::Won) && (*game_state != BoardGameState::Running(RunningState::Crashed))) {
-        change_gamestate_event_writer.send(ChangeGameStateEvent{old_state: *game_state, new_state: BoardGameState::Running(RunningState::Won)});  // Here I'm ASSUMING 
+        change_gamestate_event_writer.write(ChangeGameStateEvent{old_state: *game_state, new_state: BoardGameState::Running(RunningState::Won)});  // Here I'm ASSUMING 
         *game_state = BoardGameState::Running(RunningState::Won);
     }
     /////////////////////////:

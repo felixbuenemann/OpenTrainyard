@@ -67,12 +67,12 @@ impl Plugin for MainGamePlugin {
                 delete_cosmetic_trains_with_finished_animations,
             ).run_if(in_state(GameState::Playing)))
             .add_systems(FixedUpdate, logic_tick.run_if(in_state(GameState::Playing)))
-            .add_event::<DoubleClickEvent>()
-            .add_event::<TileHoverEvent>()
-            .add_event::<ScrollBarLimitsEvent>()
-            .add_event::<BoardEvent>()
-            .add_event::<ChangeGameStateEvent>()
-            .add_event::<SpawnCosmeticTrainEvent>()
+            .add_message::<DoubleClickEvent>()
+            .add_message::<TileHoverEvent>()
+            .add_message::<ScrollBarLimitsEvent>()
+            .add_message::<BoardEvent>()
+            .add_message::<ChangeGameStateEvent>()
+            .add_message::<SpawnCosmeticTrainEvent>()
             ;
     }
 }
@@ -152,7 +152,7 @@ fn setup_game_menu(
     textures: Res<TileAssets>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
 
     let _erase_id = make_button("ERASE".to_string(), &mut commands, &font_assets, &button_colors, FONT_SIZE, left, right, top - heigh - margin, bottom - heigh - margin, EraseStateButton, Some(MainGameBotton));
@@ -184,13 +184,13 @@ fn cleanup_menu(
     ) {
     // Delete all boards:
     for board_id in board_q.iter() {
-        if let Some(entity) = commands.get_entity(board_id) {
-            entity.despawn_recursive();
+        if let Ok(mut entity) = commands.get_entity(board_id) {
+            entity.despawn();
         }
     }
     // For button in query:
     for button in buttons.iter() { // It's never more than 1, but can very well be 0
-        if let Some(id) = commands.get_entity(button) { id.despawn_recursive();};
+        if let Ok(mut id) = commands.get_entity(button) { id.despawn();};
     }
 }
 
@@ -201,7 +201,7 @@ fn cleanup_menu(
 fn init_gmae(
     mut commands: Commands,
     // BoardEvent event writer:
-    mut board_event_writer: EventWriter<BoardEvent>,
+    mut board_event_writer: MessageWriter<BoardEvent>,
     selected_level: Res<SelectedLevel>,
     // Query existing boards:
     board_q: Query<Entity, With<Board>>,
@@ -217,7 +217,7 @@ fn init_gmae(
     mut popup_query: Query<Entity, With<Popup>>,
     player_solutions_data: Res<SolutionsSavedData>,
 ) {
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     // Spawn the level name BUTTON:
     let (_, (left_, right_, bottom_, top_), _) = get_upper_coordinates(window);
     let _name_id = make_text(selected_level.level.clone(), &mut commands, &font_assets, &button_colors, FONT_SIZE, left_, right_, top_, bottom_, MainGameBotton, Some(LevelNameElem));
@@ -232,7 +232,7 @@ fn init_gmae(
 fn click_nextlevel_button(
     mut commands: Commands,
     mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<NextLevelButton>)>,
-    mut board_event_writer: EventWriter<BoardEvent>,
+    mut board_event_writer: MessageWriter<BoardEvent>,
     mut selected_level: ResMut<SelectedLevel>,
     // Query existing boards:
     board_q: Query<Entity, With<Board>>,
@@ -248,17 +248,17 @@ fn click_nextlevel_button(
     _button_colors: Res<ButtonColors>,
     mut text_query: Query<&mut Text, With<TextElem>>,
     player_solutions_data: Res<SolutionsSavedData>,
-    mut solved_data_event_writer: EventWriter<SelectedLevelSolvedDataEvent>,
+    mut solved_data_event_writer: MessageWriter<SelectedLevelSolvedDataEvent>,
     mut popup_query: Query<Entity, With<Popup>>,
 
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
-                let window = window_query.single();
+                let window = window_query.single().unwrap();
                 // Serialize the current map:
                 let evt_to_send_maybe = _get_event_to_serialize_current_map(&board_tilemap_q, &mut selected_level);
-                if let Some(evt_to_send) = evt_to_send_maybe { solved_data_event_writer.send(evt_to_send); }
+                if let Some(evt_to_send) = evt_to_send_maybe { solved_data_event_writer.write(evt_to_send); }
 
                 // Get the next level:
                 if let Some(next_puzzle) = get_next_puzzle(selected_level.level.clone(), &levels) {
@@ -289,7 +289,7 @@ fn click_back_button(
     mut interaction_query: Query<(&Interaction, &mut BackgroundColor), (Changed<Interaction>, With<Button>, With<BackButton>)>,
     mut next_state: ResMut<NextState<GameState>>,
     board_tilemap_q: Query<(&BoardTileMap, &BoardGameState, &BoardTickStatus ), With<Board>>,
-    mut solved_data_event_writer: EventWriter<SelectedLevelSolvedDataEvent>,
+    mut solved_data_event_writer: MessageWriter<SelectedLevelSolvedDataEvent>,
     mut selected_level: ResMut<SelectedLevel>,
 ) {
     for (interaction, _color) in &mut interaction_query {
@@ -297,7 +297,7 @@ fn click_back_button(
             Interaction::Pressed => {
                 // Serialize the current map:
                 let evt_to_send_maybe = _get_event_to_serialize_current_map(&board_tilemap_q, &mut selected_level);
-                if let Some(evt_to_send) = evt_to_send_maybe { solved_data_event_writer.send(evt_to_send); }
+                if let Some(evt_to_send) = evt_to_send_maybe { solved_data_event_writer.write(evt_to_send); }
 
                 next_state.set(GameState::MenuSolutions);
             }
@@ -314,7 +314,7 @@ fn click_erase_button(
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>, With<EraseStateButton>),
         >,
-    mut change_board_game_state_event_writer: EventWriter<ChangeGameStateEvent>,
+    mut change_board_game_state_event_writer: MessageWriter<ChangeGameStateEvent>,
     mut board_q: Query<(Entity, &mut BoardHoverable, &BoardGameState), With<Board>>,
 ) {
     for (interaction, _) in &mut interaction_query {
@@ -323,11 +323,11 @@ fn click_erase_button(
                 Interaction::Pressed => {
                     match *hovering_state {
                         BoardGameState::Erasing =>{
-                            change_board_game_state_event_writer.send(ChangeGameStateEvent { new_state: BoardGameState::Drawing, old_state: BoardGameState::Erasing });
+                            change_board_game_state_event_writer.write(ChangeGameStateEvent { new_state: BoardGameState::Drawing, old_state: BoardGameState::Erasing });
 
                         },
                         BoardGameState::Drawing => {
-                            change_board_game_state_event_writer.send(ChangeGameStateEvent { new_state: BoardGameState::Erasing, old_state: BoardGameState::Drawing });
+                            change_board_game_state_event_writer.write(ChangeGameStateEvent { new_state: BoardGameState::Erasing, old_state: BoardGameState::Drawing });
                         },
                         _ => {}
                     };
@@ -367,7 +367,7 @@ fn click_undo_button(
 fn click_run_button(
     mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<RunButton>),>,
     mut board_q: Query<(Entity, &mut BoardHoverable, &BoardGameState), With<Board>>,
-    mut change_board_game_state_event_writer: EventWriter<ChangeGameStateEvent>,
+    mut change_board_game_state_event_writer: MessageWriter<ChangeGameStateEvent>,
 
 ) {
     for interaction in &mut interaction_query {
@@ -377,10 +377,10 @@ fn click_run_button(
                     println!("TRIGGERED RUN!");
                     match *hovering_state {
                         BoardGameState::Erasing | BoardGameState::Drawing =>{
-                            change_board_game_state_event_writer.send(ChangeGameStateEvent { new_state: BoardGameState::Running(RunningState::Started), old_state: *hovering_state });
+                            change_board_game_state_event_writer.write(ChangeGameStateEvent { new_state: BoardGameState::Running(RunningState::Started), old_state: *hovering_state });
                         },
                         BoardGameState::Running(_) => {
-                            change_board_game_state_event_writer.send(ChangeGameStateEvent { new_state: BoardGameState::Drawing, old_state: *hovering_state });
+                            change_board_game_state_event_writer.write(ChangeGameStateEvent { new_state: BoardGameState::Drawing, old_state: *hovering_state });
                         },
                     };
                 }
@@ -400,12 +400,12 @@ pub fn style_run_button(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
     for hovering_state in board_q.iter() {
-        let window = window_query.single();
+        let window = window_query.single().unwrap();
         match *hovering_state {
             BoardGameState::Running(_) => {
                 // Despawn the button:
                 for entity in interaction_query.iter_mut() {
-                    if let Some(id) = commands.get_entity(entity) { id.despawn_recursive();}
+                    if let Ok(mut id) = commands.get_entity(entity) { id.despawn();}
                 }
                 // Rebuild:
                 let (width, margin, _heigh, percent_left_right, _left, _right, bottom, top) = get_coordinates(window);
@@ -415,7 +415,7 @@ pub fn style_run_button(
             _ => {
                 // Despawn the button:
                 for entity in interaction_query.iter_mut() {
-                    if let Some(id) = commands.get_entity(entity) { id.despawn_recursive();}
+                    if let Ok(mut id) = commands.get_entity(entity) { id.despawn();}
                 }
                 // Rebuild:
                 let (width, margin, _heigh, percent_left_right, _left, _right, bottom, top) = get_coordinates(window);
@@ -434,7 +434,7 @@ fn add_borders(
     for hovering_state in board_q.iter() {
         // Despawn all the borders:
         for elem in elems.iter() {
-            if let Some(id) = commands.get_entity(elem) { id.despawn_recursive();}
+            if let Ok(mut id) = commands.get_entity(elem) { id.despawn();}
         }
         // Make new ones:
         match *hovering_state {
@@ -464,10 +464,10 @@ fn add_running_status_indicator(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
     for hovering_state in board_q.iter() {
-        let window = window_query.single();
+        let window = window_query.single().unwrap();
         // Despawn all entities of type RunningGameStateDisplay:
         for elem in elems.iter() {
-            if let Some(id) = commands.get_entity(elem) { id.despawn_recursive();}
+            if let Ok(mut id) = commands.get_entity(elem) { id.despawn();}
         }
         // Make new ones:
         match *hovering_state {
@@ -528,7 +528,7 @@ fn change_level(
         player_solutions_data: &Res<SolutionsSavedData>,
         board_q: &Query<Entity, With<Board>>,
         commands: &mut Commands,
-        board_event_writer: &mut EventWriter<BoardEvent>,
+        board_event_writer: &mut MessageWriter<BoardEvent>,
         _level_name_query: &Query<Entity,  With<LevelNameElem>>,
         _window: &Window,
         // Query mut TextElem:
@@ -537,16 +537,16 @@ fn change_level(
 ) {
     // Delete board:
     for board_id in board_q.iter() {
-        if let Some(id) = commands.get_entity(board_id) { id.despawn_recursive();}
+        if let Ok(mut id) = commands.get_entity(board_id) { id.despawn();}
     }
     // Delete popups:
     for popup_id in popup_query.iter() {
-        if let Some(entity) = commands.get_entity(popup_id) { entity.despawn_recursive(); }
+        if let Ok(mut entity) = commands.get_entity(popup_id) { entity.despawn(); }
     }
 
     // Send the event to create the board:
     println!("LAUNCHED: {}", selected_level.level.clone());
-    board_event_writer.send(BoardEvent::Make{map_name: selected_level.level.clone(), map: selected_level.current_map.clone(), scale: 1., position: None, index: None});
+    board_event_writer.write(BoardEvent::Make{map_name: selected_level.level.clone(), map: selected_level.current_map.clone(), scale: 1., position: None, index: None});
 
     for mut text in text_query.iter_mut() {
         **text = selected_level.level.clone();

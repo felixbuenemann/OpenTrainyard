@@ -49,7 +49,7 @@ fn setup_menu_credits(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     _tile_assets: Res<TileAssets>,
 ) {
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     let width = window.width();
     let height = window.height();
     //Write "Trainyard" at the top of the page:
@@ -78,7 +78,7 @@ fn setup_menu_credits(
             ..default()
         },
         TextColor(Color::srgb(0.9, 0.9, 0.9)),
-        TextLayout::new_with_justify(JustifyText::Center),
+        TextLayout::new_with_justify(Justify::Center),
         Node {
             position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
@@ -120,7 +120,7 @@ fn click_back_button_credits(
 fn cleanup_menu(mut commands: Commands, buttons: Query<Entity, With<BackButtonCredits>>) {
     // For button in query:
     for button in buttons.iter() { // It's never more than 1, but can very well be 0
-        if let Some(id) = commands.get_entity(button) {id.despawn_recursive();}
+        if let Ok(mut id) = commands.get_entity(button) {id.despawn();}
     }
 }
 

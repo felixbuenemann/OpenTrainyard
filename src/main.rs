@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use bevy::prelude::*;
+use bevy::ui::IsDefaultUiCamera;
 use bevy_tweening::*;
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
@@ -85,7 +86,7 @@ pub enum GameState {
 fn setup_camera(mut commands: Commands) {
     // commands.spawn(OrthographicCameraBundle::new_2d());  // 2D orthographic camera
     // commands.spawn(UiCameraBundle::default());  // UI Camera
-    commands.spawn(Camera2d);
+    commands.spawn((Camera2d, IsDefaultUiCamera));
 }
 
 
@@ -97,7 +98,7 @@ fn main() {
         .insert_resource(PkvStore::new("OpenTrainyard", "OpenTrainyard"))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: (320., 550.).into(),
+                resolution: bevy::window::WindowResolution::new(320, 550),
                 title: "Trainyard".to_string(),
                 canvas: Some("#bevy".to_owned()),
                 ..default()
@@ -119,16 +120,17 @@ fn main() {
         .add_plugins(MainGamePlugin)
         .init_state::<GameState>()
         .add_systems(Update, (button_color_handler, save_player_data))
-        .add_event::<SelectedLevelSolvedDataEvent>()
+        .add_message::<SelectedLevelSolvedDataEvent>()
         .run();
 }
 
 // Sets the icon on windows and X11
 fn set_window_icon(
-    windows: NonSend<WinitWindows>,
+    windows: Option<NonSend<WinitWindows>>,
     window_query: Query<Entity, With<PrimaryWindow>>,
 ) {
-    let entity = window_query.single();
+    let Some(windows) = windows else { return };
+    let Ok(entity) = window_query.single() else { return };
     let Some(primary) = windows.get_window(entity) else { return };
     let icon_buf = Cursor::new(include_bytes!("../assets/samples/icon_crop.png"));
     if let Ok(image) = image::load(icon_buf, image::ImageFormat::Png) {

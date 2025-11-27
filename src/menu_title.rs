@@ -72,7 +72,7 @@ fn setup_menu(
         *player_solutions_data = SolutionsSavedData::default();
     }
 
-    let window = window_query.single();
+    let window = window_query.single().unwrap();
     let width = window.width();
     let height = window.height();
     println!("YES IM HERE. good...");
@@ -95,7 +95,7 @@ fn setup_menu(
         Transform::from_xyz(0., height * 0.11, 0.),
         MainMenuElem{},
     ));
-        
+
     //Write "Trainyard" at the top of the page:
     let mut ec = commands.spawn((
         Node {
@@ -121,7 +121,7 @@ fn setup_menu(
             ..default()
         },
         TextColor(Color::srgb(0.9, 0.9, 0.9)),
-        TextLayout::new_with_justify(JustifyText::Center),
+        TextLayout::new_with_justify(Justify::Center),
         Node {
             position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
@@ -211,7 +211,7 @@ fn click_button_credits(
 fn cleanup_menu(mut commands: Commands, buttons: Query<Entity, With<MainMenuElem>>) {
     // For button in query:
     for button in buttons.iter() { // It's never more than 1, but can very well be 0
-        if let Some(id) = commands.get_entity(button) {id.despawn_recursive();}
+        if let Ok(mut id) = commands.get_entity(button) {id.despawn();}
     }
 }
 

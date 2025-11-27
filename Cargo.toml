@@ -23,7 +23,7 @@ dev = [
 ]
 
 [dependencies]
-bevy = { version = "0.15", default-features = false, features = [
+bevy = { version = "0.17.3", default-features = false, features = [
     "bevy_asset",
     "bevy_winit",
     "bevy_render",
@@ -31,18 +31,20 @@ bevy = { version = "0.15", default-features = false, features = [
     "bevy_sprite",
     "bevy_text",
     "bevy_ui",
+    "bevy_ui_render",
+    "bevy_ui_picking_backend",
     "bevy_state",
     "png",
     "default_font",
     "multi_threaded",
 ] }
-bevy_kira_audio = { version = "0.21" }
-bevy_asset_loader = { version = "0.22" }
-bevy_pkv = "0.12"
+bevy_kira_audio = { version = "0.24.0" }
+bevy_asset_loader = { version = "0.24.0-rc.1" }
+bevy_pkv = "0.14.0"
 rand = { version = "0.8" }
 partial_application = "0.2.1"
 serde = { version = "1.0", features = ["derive"] }
-bevy_tweening = "0.12"
+bevy_tweening = "0.14.0"
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.30", default-features = false }

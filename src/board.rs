@@ -183,11 +183,11 @@ pub struct BoardBundle {
 // EVENTS
 /////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Debug, Clone, Event)]
+#[derive(Debug, Clone, Message)]
 pub enum BoardEvent {
     Make{
-        map_name: String, 
-        map: String,  
+        map_name: String,
+        map: String,
         scale: f32,
         position: Option<BoardPosition>,
         index: Option<u32>,
@@ -197,7 +197,7 @@ pub enum BoardEvent {
 
 
 // ChangeGameStateEvent:
-#[derive(Debug, Clone, Event)]
+#[derive(Debug, Clone, Message)]
 pub struct ChangeGameStateEvent {
     pub new_state: BoardGameState,
     pub old_state: BoardGameState,
@@ -225,7 +225,7 @@ pub fn create_board(
     board_assets_map: Res<TileAssets>,
     board_options: Res<BoardOptionsDefault>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
-    mut board_event_reader: EventReader<BoardEvent>,
+    mut board_event_reader: MessageReader<BoardEvent>,
 ) {
     for event in board_event_reader.read() {
         match event {
@@ -234,7 +234,7 @@ pub fn create_board(
                 let tile_map: Vec<Vec<Tile>> = parse_map(map);
                 let n_width_ = tile_map.len();
                 let n_height_ = tile_map.len();
-                let window = window_query.single();
+                let window = window_query.single().unwrap();
                 let tile_size = match board_options.tile_size {
                     TileSize::Fixed(v) => v,
                     TileSize::Adaptive => (window.width() / n_width_ as f32).min(window.height() / n_height_ as f32) * 0.92
@@ -316,15 +316,15 @@ pub fn cleanup_board(
     mut commands: Commands, 
     board_q: Query<Entity, With<Board>>,
     // Read event:
-    mut board_event_reader: EventReader<BoardEvent>,
+    mut board_event_reader: MessageReader<BoardEvent>,
 ) {
     for event in board_event_reader.read() {
         match event {
             BoardEvent::Delete => {
                 // Delete all boards:
                 for board_id in board_q.iter() {
-                    if let Some(entity) = commands.get_entity(board_id) { 
-                        entity.despawn_recursive();
+                    if let Ok(mut entity) = commands.get_entity(board_id) { 
+                        entity.despawn();
                     }
                 }
             },
