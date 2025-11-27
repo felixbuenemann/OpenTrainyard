@@ -63,20 +63,12 @@ pub struct ScrollBarHandleBundle {
     pub scroll_bar_position: ScrollBarPosition,
     pub scroll_bar_status: ScrollBarStatus,
 
-    pub sprite: Sprite,
-
-    // Flattened components of ImageBundle AND ButtonBundle - Nice!   (kinda .....)
+    // UI components for Bevy 0.15
     pub node: Node,
     pub button: Button,
     pub interaction: Interaction,
     pub focus_policy: FocusPolicy,
     pub background_color: BackgroundColor,
-    pub image: ImageNode,
-    pub transform: Transform,
-    pub global_transform: GlobalTransform,
-    pub visibility: Visibility,
-    pub inherited_visibility: InheritedVisibility,
-    pub view_visibility: ViewVisibility,
     pub z_index: ZIndex,
 }
 
