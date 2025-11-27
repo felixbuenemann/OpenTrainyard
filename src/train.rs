@@ -25,7 +25,8 @@ pub struct TrainBundle{
     pub global_transform: GlobalTransform,
     pub texture: Handle<Image>,
     pub visibility: Visibility, // User indication of whether an entity is visible
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 impl Default for TrainBundle {
     fn default() -> Self {
@@ -36,7 +37,8 @@ impl Default for TrainBundle {
             global_transform: default(),
             texture: default(),
             visibility: default(),
-            computed_visibility: default(),
+            inherited_visibility: default(),
+            view_visibility: default(),
         }
     }
 }
@@ -49,6 +51,7 @@ pub struct CosmeticTrain {} // For vfx of train disappearing
 // EVENTS
 /////////////////////////////////////////////////////////////////////////////////////
 
+#[derive(Event)]
 pub struct SpawnCosmeticTrainEvent {
     pub train: Train,
     pub board_id: Entity,
@@ -60,31 +63,36 @@ pub struct SpawnCosmeticTrainEvent {
 /////////////////////////////////////////////////////////////////////////////////////
 
 
-pub fn spawn_and_move_trains(
+pub fn respawn_trains(
     mut commands: Commands,
-    mut trains_q: Query<(Entity, &Train, &mut Transform, &mut Sprite), Without<CosmeticTrain>>,
+    trains_q: Query<Entity, (With<Train>, Without<CosmeticTrain>)>,
     train_assets: Res<TrainAssets>,
-    tick_params: ResMut<TicksInATick>,
-    mut board_q: Query<(Entity, &BoardDimensions, &BoardTileMap, &Children, &BoardGameState, &BoardTickStatus, ChangeTrackers<BoardTileMap>), With<Board>>,
+    tick_params: Res<TicksInATick>,
+    board_q: Query<(Entity, &BoardDimensions, &BoardTileMap, &BoardTickStatus), (With<Board>, Changed<BoardTileMap>)>,
 ) {
-    for (board_id, board_dimensions, board_tilemap, children, game_state, board_tick_status, tilemap_tracker) in board_q.iter_mut() {
-        if tilemap_tracker.is_changed()  // Respawn the trains
-        {
-            for (train_entity, _, _, _) in trains_q.iter() {
-                if let Some(train) = commands.get_entity(train_entity) {train.despawn_recursive();}
-            }
-            // match *game_state { BoardGameState::Running(_) => {}, _ => {continue;}} // Is an if else faster than an empty for loop, really ...
-            for train in board_tilemap.current_trains.iter() {
-                let child_id = make_train(*train, &mut commands, &train_assets, &board_dimensions, board_tick_status.current_tick_in_a_tick as f32 / tick_params.ticks as f32);
-                commands.entity(board_id).push_children(&[child_id]);// add the child to the parent
+    for (board_id, board_dimensions, board_tilemap, board_tick_status) in board_q.iter() {
+        // Despawn existing trains
+        for train_entity in trains_q.iter() {
+            if let Some(train) = commands.get_entity(train_entity) {
+                train.despawn_recursive();
             }
         }
-        else {  // Just move the trains
-            // match game_state { BoardGameState::Running(_) => {}, _ => {continue;}}
-            for (_, train, mut transform, sprite) in trains_q.iter_mut() {
-                *transform = get_train_transform(*train, board_dimensions, (board_tick_status.current_tick_in_a_tick as f32) / (tick_params.ticks as f32));
-                // println!("Getting train transform: {:?},  at tick: {:?}", train, tick_status.current_tick);
-            }
+        // Spawn new trains
+        for train in board_tilemap.current_trains.iter() {
+            let child_id = make_train(*train, &mut commands, &train_assets, &board_dimensions, board_tick_status.current_tick_in_a_tick as f32 / tick_params.ticks as f32);
+            commands.entity(board_id).push_children(&[child_id]);
+        }
+    }
+}
+
+pub fn move_trains(
+    mut trains_q: Query<(&Train, &mut Transform), Without<CosmeticTrain>>,
+    tick_params: Res<TicksInATick>,
+    board_q: Query<(&BoardDimensions, &BoardTickStatus), With<Board>>,
+) {
+    for (board_dimensions, board_tick_status) in board_q.iter() {
+        for (train, mut transform) in trains_q.iter_mut() {
+            *transform = get_train_transform(*train, board_dimensions, (board_tick_status.current_tick_in_a_tick as f32) / (tick_params.ticks as f32));
         }
     }
 }
@@ -109,7 +117,7 @@ pub fn spawn_cosmetic_trains_event(
     tick_params: Res<TicksInATick>,
     board_q: Query<(Entity, &BoardDimensions, &BoardTickStatus), With<Board>>,
 ) {
-    for event in spawn_cosmetic_train_event_reader.iter() {
+    for event in spawn_cosmetic_train_event_reader.read() {
         // Get the board data using ev.board_id on the query:
         let (board_entity, board_dimensions, board_tick_status) = board_q.get(event.board_id).unwrap();
 
@@ -218,7 +226,7 @@ pub fn make_train_cosmetic(train: Train, commands: &mut Commands, train_assets: 
     );
     let t2 = Tween::new(
         EaseFunction::CubicOut, std::time::Duration::from_millis(400 as u64), 
-        SpriteColorLens {start: Color::rgba(1., 1., 1., 0.8), end: Color::rgba(1., 1., 1., 0.),},
+        SpriteColorLens {start: Color::srgba(1., 1., 1., 0.8), end: Color::srgba(1., 1., 1., 0.),},
     );
 
     let child = commands.spawn((

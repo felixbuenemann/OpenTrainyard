@@ -18,13 +18,13 @@ pub struct TileSpriteBundle {
     pub coordinates: Coordinates, // Tile coordinates
     pub tile: Tile, // Tile type
 
-    // Flattened SpriteBundle #[bundle] : SO NICE!!
+    // Flattened SpriteBundle - in Bevy 0.15, Sprite has the image directly
     pub sprite: Sprite,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
-    pub texture: Handle<Image>,
     pub visibility: Visibility, // User indication of whether an entity is visible
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -442,13 +442,13 @@ pub fn make_tile(
     let (texture, transform) = get_transform_and_texture(t, assets);
     let mut child = commands.spawn(TileSpriteBundle {
         coordinates, // Tile coordinates
-        texture: texture,
         transform: transform.with_translation(Vec3::new(transl_x, transl_y, 2.)),
         tile: t,
-        sprite: default(),
+        sprite: Sprite { image: texture, ..default() },
         global_transform: default(),
         visibility: default(),
-        computed_visibility: default(),
+        inherited_visibility: default(),
+        view_visibility: default(),
     });
     if let Tile::StartTile { dir, elems , orig_len} = t {
         child

@@ -106,8 +106,8 @@ fn setup_menu(
     MainMenuElem{}));
         
     //Write "Trainyard" at the top of the page:
-    let mut ec = commands.spawn(NodeBundle {
-        style: Style {
+    let mut ec = commands.spawn((
+        Node {
             position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
@@ -117,25 +117,27 @@ fn setup_menu(
             right: Val::Px(width / 2.),
             ..default()
         },
-        background_color: BackgroundColor(button_colors.hovered),
-        transform: Transform::from_xyz(0., 0., 4.),
-        ..default()
-    });
+        BackgroundColor(button_colors.hovered),
+        Transform::from_xyz(0., 0., 4.),
+    ));
     ec.insert(MainMenuElem{});
     let ec_id = ec.id();
-    let text_id = commands.spawn(TextBundle {
-        style: Style { position_type: PositionType::Absolute, margin: UiRect::all(Val::Auto), ..default() },
-        text: Text {
-            sections: vec![TextSection {
-                value: "Trainyard".to_string(),
-                style: TextStyle { font: font_assets.fira_sans.clone(), font_size: 45., color: Color::srgb(0.9, 0.9, 0.9), },
-            }],
-            justify: JustifyText::Center,
-        ..default()
-    },
-    ..default()
-    }).id();
-    commands.entity(ec_id) .push_children(&[text_id]);
+    let text_id = commands.spawn((
+        Text::new("Trainyard"),
+        TextFont {
+            font: font_assets.fira_sans.clone(),
+            font_size: 45.,
+            ..default()
+        },
+        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        TextLayout::new_with_justify(JustifyText::Center),
+        Node {
+            position_type: PositionType::Absolute,
+            margin: UiRect::all(Val::Auto),
+            ..default()
+        },
+    )).id();
+    commands.entity(ec_id).push_children(&[text_id]);
 
     let rect_width = 120.;
     let rect_height = 50.;

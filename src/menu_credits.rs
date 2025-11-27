@@ -20,15 +20,14 @@ pub struct MenuCredits;
 impl Plugin for MenuCredits {
     fn build(&self, app: &mut App) {
         app.init_resource::<ButtonColors>()
-            .add_system_set(SystemSet::on_enter(GameState::MenuCredits).with_system(setup_menu_credits))
-            .add_system_set(SystemSet::on_update(GameState::MenuCredits).with_system(click_back_button_credits))
-            .add_system_set(SystemSet::on_exit(GameState::MenuCredits).with_system(cleanup_menu));
+            .add_systems(OnEnter(GameState::MenuCredits), setup_menu_credits)
+            .add_systems(Update, click_back_button_credits.run_if(in_state(GameState::MenuCredits)))
+            .add_systems(OnExit(GameState::MenuCredits), cleanup_menu);
     }
 }
 
 #[derive(Component)]
 pub struct BackButtonCredits;
-
 
 
 
@@ -47,54 +46,46 @@ fn setup_menu_credits(
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
     textures: Res<TileAssets>,
-    windows: Res<Windows>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     tile_assets: Res<TileAssets>,
 ) {
-    let width = windows.get_primary().unwrap().width();
-    let height = windows.get_primary().unwrap().height();
+    let window = window_query.single();
+    let width = window.width();
+    let height = window.height();
     //Write "Trainyard" at the top of the page:
-    let mut ec = commands.spawn(NodeBundle {
-        style: Style {
+    let mut ec = commands.spawn((
+        Node {
             position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center, // Baseline, // FlexEnd, // Stretch, // Center, // I have to say, this was cool ....
-            position: UiRect { top: Val::Px(height * 0.5), left: Val::Px(width / 2.), right: Val::Px(width / 2.), ..default() },
+            top: Val::Px(height * 0.5),
+            left: Val::Px(width / 2.),
+            right: Val::Px(width / 2.),
             ..default()
         },
-        background_color: BackgroundColor(button_colors.hovered),
-        transform: Transform::from_xyz(0., 0., 4.),
-        ..default()
-    });
+        BackgroundColor(button_colors.hovered),
+        Transform::from_xyz(0., 0., 4.),
+    ));
     ec.insert(BackButtonCredits{});
     let ec_id = ec.id();
-    let text_id = commands.spawn(TextBundle {
-        style: Style { position_type: PositionType::Absolute, margin: UiRect::all(Val::Auto), ..default() },
-        text: Text {
-            sections: vec![
-            TextSection {
-                value: "Credits go entirely to the original creator\nof this great puzzle:\n".to_string(),
-                style: TextStyle { font: font_assets.fira_sans.clone(), font_size:22., color: Color::rgb(0.9, 0.9, 0.9), },
-            },
-            TextSection {
-                value: "Matt Rix".to_string(),
-                style: TextStyle { font: font_assets.fira_sans.clone(), font_size:35., color: Color::rgb(0.9, 0.9, 0.9), },
-            },
-            TextSection {
-                value: "\n(@MattRix on Twitter)\n\n".to_string(),
-                style: TextStyle { font: font_assets.fira_sans.clone(), font_size:22., color: Color::rgb(0.9, 0.9, 0.9), },
-            },
-            TextSection {
-                value: "Reimplemented using the Bevy game engine\nby Mike Tasca\n(https://github.com/micoloth)".to_string(),
-                style: TextStyle { font: font_assets.fira_sans.clone(), font_size:22., color: Color::rgb(0.9, 0.9, 0.9), },
-            }
-            ],
-            alignment: TextAlignment{ vertical: VerticalAlign::Center, horizontal: HorizontalAlign::Center, },
-        ..default()
-    },
-    ..default()
-    }).id();
-    commands.entity(ec_id) .push_children(&[text_id]);
+    let credits_text = "Credits go entirely to the original creator\nof this great puzzle:\n\nMatt Rix\n\n(@MattRix on Twitter)\n\nReimplemented using the Bevy game engine\nby Mike Tasca\n(https://github.com/micoloth)";
+    let text_id = commands.spawn((
+        Text::new(credits_text),
+        TextFont {
+            font: font_assets.fira_sans.clone(),
+            font_size: 22.,
+            ..default()
+        },
+        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        TextLayout::new_with_justify(JustifyText::Center),
+        Node {
+            position_type: PositionType::Absolute,
+            margin: UiRect::all(Val::Auto),
+            ..default()
+        },
+    )).id();
+    commands.entity(ec_id).push_children(&[text_id]);
 
 
     let margin_left = 13.;
@@ -114,12 +105,12 @@ fn setup_menu_credits(
 
 fn click_back_button_credits(
     mut interaction_query: Query<&Interaction,(Changed<Interaction>, With<Button>, With<BackButtonCredits>),>,
-    mut game_state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
-                game_state.set(GameState::MenuTitle);
+            Interaction::Pressed => {
+                next_state.set(GameState::MenuTitle);
             }
             _ => {}
         }

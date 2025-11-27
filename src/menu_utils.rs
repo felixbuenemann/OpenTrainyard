@@ -39,6 +39,12 @@ pub struct ScrollBarLimits {
     pub current: f32,
     pub step: f32,
 }
+
+// Wrapper event for ScrollBarLimits since it can't be both Component and Event
+#[derive(Debug, Clone, PartialEq, Copy, Default, Event)]
+pub struct ScrollBarLimitsEvent {
+    pub limits: ScrollBarLimits,
+}
 #[derive(Debug, Component, Clone, PartialEq, Copy, Default)]
 pub struct ScrollBarPosition {
     max_x: f32,
@@ -62,11 +68,10 @@ pub struct ScrollBarHandleBundle {
     // Flattened components of ImageBundle AND ButtonBundle - Nice!   (kinda .....)
     pub node: Node,
     pub button: Button,
-    pub style: Style,
     pub interaction: Interaction,
     pub focus_policy: FocusPolicy,
     pub background_color: BackgroundColor,
-    pub image: UiImage,
+    pub image: ImageNode,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -218,14 +223,14 @@ pub fn scrollbar_dragging_handler(
     mut interaction_query: Query<(
         &mut Transform,
         &mut GlobalTransform,
-        &mut Style,
+        &mut Node,
         &mut ScrollBarPosition,
         &mut ScrollBarLimits,
         &mut ScrollBarStatus,
     )>,
-    mut dragged_event_writer: EventWriter<ScrollBarLimits>,
+    mut dragged_event_writer: EventWriter<ScrollBarLimitsEvent>,
 ) {
-    for (transform, gltr, mut style, mut sbpos, mut sblimits, sbstatus) in
+    for (transform, gltr, mut node, mut sbpos, mut sblimits, sbstatus) in
         interaction_query.iter_mut()
     {
         if sbstatus.dragging {
@@ -244,11 +249,11 @@ pub fn scrollbar_dragging_handler(
                 // println!("THANKSSS, {:?}", newval);
                 // Update ScrollBarPosition:
                 sbpos.current_x = relposx;
-                style.left = Val::Px(relposx);
+                node.left = Val::Px(relposx);
                 // launch event:
                 if newval != sblimits.current {
                     sblimits.current = newval;
-                    dragged_event_writer.send(*sblimits);
+                    dragged_event_writer.send(ScrollBarLimitsEvent { limits: *sblimits });
                 }
             }
         }
@@ -420,45 +425,36 @@ pub fn make_scrollbar(
     type_: impl Bundle,
 ) -> Entity {
     // let arrow = assets.s_arrow_elem_rigth.clone();
-    let back_id = commands.spawn(ImageBundle {
-        style: Style {
+    let back_id = commands.spawn((
+        Node {
             position_type: PositionType::Absolute,
             width: Val::Px(pright - pleft),
             height: Val::Px(ptop - pbottom),
             margin: UiRect::all(Val::Auto),
-            // justify_content: JustifyContent::Center,
-            // align_items: AlignItems::Center, // I have to say, this was cool ....
             top: Val::Px(ptop),
             left: Val::Px(pleft),
             ..default()
         },
-        z_index: ZIndex::Global(5),
-        background_color: Color::srgb(147. / 255.,  170. / 255.,  180. / 255.).into(),
-        ..default()
-    })
+        ZIndex(5),
+        BackgroundColor(Color::srgb(147. / 255.,  170. / 255.,  180. / 255.)),
+    ))
     .insert(type_)
     .id();
-    let text_id = commands.spawn(TextBundle {
-        text: Text {
-            sections: vec![TextSection {
-                value: "SPEED".to_string(),
-                style: TextStyle {
-                    font: font_assets.fira_sans.clone(),
-                    font_size: font_size,
-                    color: Color::srgb(0.9, 0.9, 0.9),
-                },
-            }],
-            justify: JustifyText::Center,
+    let text_id = commands.spawn((
+        Text::new("SPEED"),
+        TextFont {
+            font: font_assets.fira_sans.clone(),
+            font_size: font_size,
             ..default()
         },
-        style: Style {
-            // position: UiRect{left: Val::Percent(35.), ..default()},
+        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        TextLayout::new_with_justify(JustifyText::Center),
+        Node {
             margin: UiRect{left: Val::Percent(5.), ..default()},
             ..default()
         },
-        z_index: ZIndex::Global(20),
-        ..default()
-    }).id();
+        ZIndex(20),
+    )).id();
 
     // get the fraction from (scroll_bar_limits.current - min) / (scroll_bar_limits.max- min)
     // and apply it to ScrollBarPosition{ max_x: pright, min_x: pleft} to get the current_x:
@@ -473,7 +469,7 @@ pub fn make_scrollbar(
         step: scroll_bar_limits.step,
     };
     let handle_id = commands.spawn(ScrollBarHandleBundle {
-        style: Style {
+        node: Node {
             position_type: PositionType::Absolute,
             width: Val::Percent(30.),
             height: Val::Percent(100.),
@@ -492,7 +488,7 @@ pub fn make_scrollbar(
             current_x: current_x,
             step_x: 1.,
         },
-        z_index: ZIndex::Global(10),
+        z_index: ZIndex(10),
         ..default()
     })
     .id();
@@ -514,8 +510,9 @@ pub fn make_button(
     type1: impl Bundle,
     type2: Option<impl Bundle>,
 ) -> Entity {
-    let mut ec = commands.spawn((ButtonBundle {
-        style: Style {
+    let mut ec = commands.spawn((
+        Button,
+        Node {
             position_type: PositionType::Absolute,
             width: Val::Px(pright - pleft),
             height: Val::Px(ptop - pbottom),
@@ -526,26 +523,19 @@ pub fn make_button(
             left: Val::Px(pleft),
             ..default()
         },
-        background_color: button_colors.normal.into(),
-        ..default()
-    },
-    ButtonData{text: text.clone()})
-    );
+        BackgroundColor(button_colors.normal),
+        ButtonData{text: text.clone()},
+    ));
     ec.with_children(|parent| {
-        parent.spawn(TextBundle {
-            text: Text {
-                sections: vec![TextSection {
-                    value: text,
-                    style: TextStyle {
-                        font: font_assets.fira_sans.clone(),
-                        font_size: font_size,
-                        color: Color::srgb(0.9, 0.9, 0.9),
-                    },
-                }],
+        parent.spawn((
+            Text::new(text.clone()),
+            TextFont {
+                font: font_assets.fira_sans.clone(),
+                font_size: font_size,
                 ..default()
             },
-            ..default()
-        });
+            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        ));
     });
     ec.insert(type1);
     if let Some(type2) = type2 {
@@ -570,8 +560,8 @@ pub fn make_rect_with_colored_text(
     type1: impl Bundle,
     type2: Option<impl Bundle>,
 ) -> Entity {
-    let mut ec = commands.spawn(ImageBundle {
-        style: Style {
+    let mut ec = commands.spawn((
+        Node {
             position_type: PositionType::Absolute,
             width: Val::Px(pright - pleft),
             height: Val::Px(ptop - pbottom),
@@ -582,27 +572,20 @@ pub fn make_rect_with_colored_text(
             left: Val::Px(pleft),
             ..default()
         },
-        background_color: button_colors.normal.into(),
-        ..default()
-    }
-    );
+        BackgroundColor(button_colors.normal),
+    ));
+    let combined_text = format!("{}{}", text1, text2);
     ec.with_children(|parent| {
-        parent.spawn(TextBundle {
-            text: Text {
-                sections: vec![TextSection {
-                    value: text1,
-                    style: TextStyle {font: font_assets.fira_sans.clone(),font_size: font_size,color: Color::srgb(0.9, 0.9, 0.9),},
-                },
-                TextSection {
-                    value: text2,
-                    style: TextStyle {font: font_assets.fira_sans.clone(),font_size: font_size,color: textcolor,},
-                }
-                ],
-                justify: JustifyText::Center,
+        parent.spawn((
+            Text::new(combined_text),
+            TextFont {
+                font: font_assets.fira_sans.clone(),
+                font_size: font_size,
                 ..default()
             },
-            ..default()
-        });
+            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+            TextLayout::new_with_justify(JustifyText::Center),
+        ));
     });
     ec.insert(type1);
     if let Some(type2) = type2 {
@@ -625,8 +608,8 @@ pub fn make_text(
     type1: impl Bundle,
     type2: Option<impl Bundle>,
 ) -> Entity {
-    let mut ec = commands.spawn(NodeBundle {
-        style: Style {
+    let mut ec = commands.spawn(
+        Node {
             position_type: PositionType::Absolute,
             width: Val::Px(pright - pleft),
             height: Val::Px(ptop - pbottom),
@@ -638,27 +621,20 @@ pub fn make_text(
             right: Val::Px(pright),
             bottom: Val::Px(pbottom),
             ..default()
-        },
-        // background_color: button_colors.normal.into(),
-        ..default()
-    }
+        }
     );
     ec.with_children(|parent| {
-        parent.spawn((TextBundle {
-            text: Text {
-                sections: vec![TextSection {
-                    value: text,
-                    style: TextStyle {
-                        font: font_assets.fira_sans.clone(),
-                        font_size: font_size,
-                        color: Color::srgb(0.9, 0.9, 0.9),
-                    },
-                }],
-                justify: JustifyText::Center,
+        parent.spawn((
+            Text::new(text),
+            TextFont {
+                font: font_assets.fira_sans.clone(),
+                font_size: font_size,
                 ..default()
             },
-            ..default()
-        }, TextElem{}));
+            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+            TextLayout::new_with_justify(JustifyText::Center),
+            TextElem{},
+        ));
     });
     ec.insert(type1);
     if let Some(type2) = type2 {
@@ -678,8 +654,8 @@ pub fn make_tutorial_popup(
 {
     let font_size = 20.;
 // A fixed positioned popup rectangle with sides at 10% to 90& of screen width, and 45% to 55% of screen height. nside, print text.
-    let popup_id = commands.spawn((NodeBundle {
-        style: Style {
+    let popup_id = commands.spawn((
+        Node {
             position_type: PositionType::Absolute,
             width: Val::Percent(80.),
             height: Val::Percent(25.),
@@ -690,44 +666,36 @@ pub fn make_tutorial_popup(
             left: Val::Percent(10.),
             ..default()
         },
-        background_color: Color::srgb(0.1, 0.1, 0.1).into(),
-        ..default()
-    }, Popup{}, MainGameBotton{})).id();
-    let text_id = commands.spawn(TextBundle {
-        text: Text {
-            sections: vec![TextSection {
-                value: text,
-                style: TextStyle {
-                    font: font_assets.fira_sans.clone(),
-                    font_size: font_size,
-                    color: Color::srgba(0.9, 0.9, 0.9, 0.9),
-                },
-            }],
-            justify: JustifyText::Center,
+        BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+        Popup{},
+        MainGameBotton{},
+    )).id();
+    let text_id = commands.spawn((
+        Text::new(text),
+        TextFont {
+            font: font_assets.fira_sans.clone(),
+            font_size: font_size,
             ..default()
         },
-        style: Style {
+        TextColor(Color::srgba(0.9, 0.9, 0.9, 0.9)),
+        TextLayout::new_with_justify(JustifyText::Center),
+        Node {
             margin: UiRect{top: Val::Percent(-13.), ..default()},
             ..default()
         },
-        ..default()
-    }).id();
+    )).id();
     commands.entity(popup_id).push_children(&[text_id]);// add the child to the parent
     if let Some(text_2_) = text_2 {
-        let text2_id = commands.spawn(TextBundle {
-            text: Text {
-                sections: vec![TextSection {
-                    value: text_2_,
-                    style: TextStyle {
-                        font: font_assets.fira_sans.clone(),
-                        font_size: 12.,
-                        color: Color::srgb(0.6, 0.6, 0.6),
-                    },
-                }],
-                justify: JustifyText::Center,
+        let text2_id = commands.spawn((
+            Text::new(text_2_),
+            TextFont {
+                font: font_assets.fira_sans.clone(),
+                font_size: 12.,
                 ..default()
             },
-            style: Style {
+            TextColor(Color::srgb(0.6, 0.6, 0.6)),
+            TextLayout::new_with_justify(JustifyText::Center),
+            Node {
                 position_type: PositionType::Absolute,
                 // Button (centered horizontally, 40% of width., bottom vertically)
                 bottom: Val::Auto,
@@ -736,47 +704,38 @@ pub fn make_tutorial_popup(
                 top: Val::Percent(60.),
                 ..default()
             },
-            ..default()
-        }).id();
+        )).id();
         commands.entity(popup_id).push_children(&[text2_id]);// add the child to the parent
-
     }
 
-    let but_id = commands.spawn(
-        (ButtonBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                margin: UiRect::all(Val::Auto),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center, // I have to say, this was cool ....
-                // Button (centered horizontally, 40% of width., bottom vertically)
-                bottom: Val::Percent(5.),
-                left: Val::Percent(35.),
-                right: Val::Percent(35.),
-                top: Val::Percent(75.),
-                ..default()
-            },
-            background_color: button_colors.normal.into(),
+    let but_id = commands.spawn((
+        Button,
+        Node {
+            position_type: PositionType::Absolute,
+            margin: UiRect::all(Val::Auto),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center, // I have to say, this was cool ....
+            // Button (centered horizontally, 40% of width., bottom vertically)
+            bottom: Val::Percent(5.),
+            left: Val::Percent(35.),
+            right: Val::Percent(35.),
+            top: Val::Percent(75.),
             ..default()
         },
-        ClosePopupButton{})
-    ).id();
+        BackgroundColor(button_colors.normal),
+        ClosePopupButton{},
+    )).id();
     commands.entity(popup_id).push_children(&[but_id]);// add the child to the parent
 
-    let but_text_id = commands.spawn(TextBundle {
-        text: Text {
-            sections: vec![TextSection {
-                value: "GOT IT".to_string(),
-                style: TextStyle {
-                    font: font_assets.fira_sans.clone(),
-                    font_size: font_size * 0.66,
-                    color: Color::srgb(0.9, 0.9, 0.9),
-                },
-            }],
+    let but_text_id = commands.spawn((
+        Text::new("GOT IT"),
+        TextFont {
+            font: font_assets.fira_sans.clone(),
+            font_size: font_size * 0.66,
             ..default()
         },
-        ..default()
-    }).id();
+        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+    )).id();
     commands.entity(but_id).push_children(&[but_text_id]);// add the child to the parent
 }
 
@@ -792,10 +751,9 @@ pub fn make_victory_popup(
 {
     let font_size = 20.;
 // A fixed positioned popup rectangle with sides at 10% to 90& of screen width, and 45% to 55% of screen height. nside, print text.
-    let popup_id = commands.spawn((NodeBundle {
-        style: Style {
+    let popup_id = commands.spawn((
+        Node {
             position_type: PositionType::Absolute,
-            // size: Size::new(Val::Percent(80.), Val::Percent(25.)),
             margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center, // I have to say, this was cool ....
@@ -805,138 +763,110 @@ pub fn make_victory_popup(
             bottom: Val::Percent(35.),
             ..default()
         },
-        background_color: Color::srgb(0.1, 0.1, 0.1).into(),
-        z_index: ZIndex::Global(10),
-        ..default()
-    }, Popup{}, MainGameBotton{})).id();
-    let winobj = TextSection {
-        value: "YOU SOLVED IT!\n".to_string(),
-        style: TextStyle {
+        BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+        ZIndex(10),
+        Popup{},
+        MainGameBotton{},
+    )).id();
+
+    // Build combined text with sections
+    let combined_text = if let Some(text2_) = &text_2 {
+        format!("YOU SOLVED IT!\n\n{}{}", text, text2_)
+    } else {
+        format!("YOU SOLVED IT!\n\n{}", text)
+    };
+
+    let text_id = commands.spawn((
+        Text::new(combined_text),
+        TextFont {
             font: font_assets.fira_sans.clone(),
             font_size: font_size,
-            color: Color::srgba(0.9, 0.9, 0.9, 0.9),
-        },
-    };
-    let textscoreobj = TextSection {
-        value: "\n".to_string() + &text,
-        style: TextStyle {
-            font: font_assets.fira_sans.clone(),
-            font_size: font_size * 0.8,
-            color: Color::srgba(0.9, 0.9, 0.9, 0.9),
-        },
-    };
-    let mut text_sections = vec![winobj, textscoreobj];
-    if let Some(text2_) = text_2 {
-        let textobj2 = TextSection {
-            value: text2_.to_string(),
-            style: TextStyle {
-                font: font_assets.fira_sans.clone(),
-                font_size: font_size * 0.8,
-                // color: Color::srgb(161. / 255. , 51. / 255. , 37. / 255. ),
-                color: Color::srgb(0.6, 0.6, 0.6 ),
-            },
-        };
-        text_sections.push(textobj2);
-    }
-    let text_id = commands.spawn(TextBundle {
-        text: Text {
-            sections: text_sections,
-            justify: JustifyText::Left,
             ..default()
         },
-        style: Style {
+        TextColor(Color::srgba(0.9, 0.9, 0.9, 0.9)),
+        TextLayout::new_with_justify(JustifyText::Left),
+        Node {
             position_type: PositionType::Absolute,
             left: Val::Percent(55.),
             top: Val::Percent(18.),
             ..default()
         },
-        ..default()
-    }).id();
+    )).id();
     commands.entity(popup_id).push_children(&[text_id]);// add the child to the parent
 
-    let but_id_close = commands.spawn(
-        (ButtonBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                margin: UiRect::all(Val::Auto),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center, // I have to say, this was cool ....
-                bottom: Val::Percent(5.),
-                left: Val::Percent(12.),
-                right: Val::Percent(55.),
-                top: Val::Percent(75.),
-                ..default()
-            },
-            background_color: button_colors.normal.into(),
+    let but_id_close = commands.spawn((
+        Button,
+        Node {
+            position_type: PositionType::Absolute,
+            margin: UiRect::all(Val::Auto),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center, // I have to say, this was cool ....
+            bottom: Val::Percent(5.),
+            left: Val::Percent(12.),
+            right: Val::Percent(55.),
+            top: Val::Percent(75.),
             ..default()
         },
-        ClosePopupButton{})
-    ).id();
+        BackgroundColor(button_colors.normal),
+        ClosePopupButton{},
+    )).id();
     commands.entity(popup_id).push_children(&[but_id_close]);// add the child to the parent
 
-    let but_next_id = commands.spawn(TextBundle {
-        text: Text {
-            sections: vec![TextSection {
-                value: "REPLAY SOLUTION".to_string(),
-                style: TextStyle { font: font_assets.fira_sans.clone(), font_size: font_size * 0.9, color: Color::srgb(0.9, 0.9, 0.9), },
-            }],
+    let but_next_id = commands.spawn((
+        Text::new("REPLAY SOLUTION"),
+        TextFont {
+            font: font_assets.fira_sans.clone(),
+            font_size: font_size * 0.9,
             ..default()
         },
-        style: Style {
+        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        Node {
             position_type: PositionType::Absolute,
-        ..default()
+            ..default()
         },
-        ..default()
-    }).id();
+    )).id();
     commands.entity(but_id_close).push_children(&[but_next_id]);// add the child to the parent
 
-    let but_id_nextlevel = commands.spawn(
-        (ButtonBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                margin: UiRect::all(Val::Auto),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center, // I have to say, this was cool ....
-                bottom: Val::Percent(5.),
-                left: Val::Percent(55.),
-                right: Val::Percent(12.),
-                top: Val::Percent(75.),
-                ..default()
-            },
-            background_color: button_colors.normal.into(),
+    let but_id_nextlevel = commands.spawn((
+        Button,
+        Node {
+            position_type: PositionType::Absolute,
+            margin: UiRect::all(Val::Auto),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center, // I have to say, this was cool ....
+            bottom: Val::Percent(5.),
+            left: Val::Percent(55.),
+            right: Val::Percent(12.),
+            top: Val::Percent(75.),
             ..default()
         },
-        NextLevelButton{})
-    ).id();
+        BackgroundColor(button_colors.normal),
+        NextLevelButton{},
+    )).id();
     commands.entity(popup_id).push_children(&[but_id_nextlevel]);// add the child to the parent
 
-    let but_nexttext_id = commands.spawn(TextBundle {
-        text: Text {
-            sections: vec![TextSection {
-                value: "NEXT LEVEL".to_string(),
-                style: TextStyle { font: font_assets.fira_sans.clone(), font_size: font_size * 0.9, color: Color::srgb(0.9, 0.9, 0.9), },
-            }],
+    let but_nexttext_id = commands.spawn((
+        Text::new("NEXT LEVEL"),
+        TextFont {
+            font: font_assets.fira_sans.clone(),
+            font_size: font_size * 0.9,
             ..default()
         },
-        ..default()
-    }).id();
+        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+    )).id();
     commands.entity(but_id_nextlevel).push_children(&[but_nexttext_id]);// add the child to the parent
 
-    let tick_id = commands.spawn(
-        // NodeBundle{..default()}).with_children(|parent| {parent.spawn(
-        (ImageBundle {
-            image: UiImage::new(tile_assets.tick.clone()),
-            style: Style {
-                position_type: PositionType::Absolute,
-                left: Val::Percent(17.),
-                top: Val::Percent(25.),
-                right: Val::Auto,
-                bottom: Val::Auto,
-                ..default()
-            },
-            transform: Transform{..default()}.with_scale(Vec3 { x: 0., y: 0., z: 10. },),
+    let tick_id = commands.spawn((
+        UiImage::new(tile_assets.tick.clone()),
+        Node {
+            position_type: PositionType::Absolute,
+            left: Val::Percent(17.),
+            top: Val::Percent(25.),
+            right: Val::Auto,
+            bottom: Val::Auto,
             ..default()
         },
+        Transform::default().with_scale(Vec3 { x: 0., y: 0., z: 10. }),
         Animator::new(Tween::new(
                 EaseFunction::CubicIn, Duration::from_millis(400 as u64),
                 TransformScaleLens {start: Vec3 { x: 0., y: 0., z: 10. }, end: Vec3 { x: 1.9, y: 1.9, z: 10. },},
@@ -983,8 +913,8 @@ pub fn make_border(
     // Do it by creating 4 different narrow rectangles, at each side of the screen:
     // Left rectangle:
     commands
-        .spawn(ImageBundle {
-            style: Style {
+        .spawn((
+            Node {
                 position_type: PositionType::Absolute,
                 width: Val::Px(4.),
                 height: Val::Percent(100.),
@@ -994,15 +924,14 @@ pub fn make_border(
                 ..default()
             },
             // yellow color:
-            background_color: color.into(),
-            ..default()
-        })
+            BackgroundColor(color),
+        ))
         .insert(BorderElem)
         .insert(component_to_add.clone());
     // Right rectangle:
     commands
-        .spawn(ImageBundle {
-            style: Style {
+        .spawn((
+            Node {
                 position_type: PositionType::Absolute,
                 width: Val::Px(4.),
                 height: Val::Percent(100.),
@@ -1012,15 +941,14 @@ pub fn make_border(
                 ..default()
             },
             // yellow color:
-            background_color: color.into(),
-            ..default()
-        })
+            BackgroundColor(color),
+        ))
         .insert(BorderElem)
         .insert(component_to_add.clone());
     // Top rectangle:
     commands
-        .spawn(ImageBundle {
-            style: Style {
+        .spawn((
+            Node {
                 position_type: PositionType::Absolute,
                 width: Val::Percent(100.),
                 height: Val::Px(4.),
@@ -1030,15 +958,14 @@ pub fn make_border(
                 ..default()
             },
             // yellow color:
-            background_color: color.into(),
-            ..default()
-        })
+            BackgroundColor(color),
+        ))
         .insert(BorderElem)
         .insert(component_to_add.clone());
     // Bottom rectangle:
     commands
-        .spawn(ImageBundle {
-            style: Style {
+        .spawn((
+            Node {
                 position_type: PositionType::Absolute,
                 width: Val::Percent(100.),
                 height: Val::Px(4.),
@@ -1048,9 +975,8 @@ pub fn make_border(
                 ..default()
             },
             // yellow color:
-            background_color: color.into(),
-            ..default()
-        })
+            BackgroundColor(color),
+        ))
         .insert(BorderElem)
         .insert(component_to_add.clone());
 }

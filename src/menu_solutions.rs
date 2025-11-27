@@ -10,7 +10,7 @@ use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy_tweening::*;
 use bevy_tweening::lens::TransformPositionLens;
-use bevy_tweening::lens::UiPositionLens;
+use bevy_tweening::lens::UiBackgroundColorLens;
 
 use crate::menu_utils::*;
 use crate::board::Rect;
@@ -39,27 +39,24 @@ impl Plugin for MenuSolutionsPlugin {
     fn build(&self, app: &mut App) {
         app
             .insert_resource(get_board_option_default())
-            .add_system_set(SystemSet::on_enter(GameState::MenuSolutions).with_system(setup_solutions_menu),)
-            .add_system_set(SystemSet::on_exit(GameState::MenuSolutions).with_system(cleanup_solutions_menu),)
-            .add_system_set(SystemSet::on_update(GameState::MenuSolutions)
-                .with_system(create_board)
-                .with_system(handle_gesture_mouse)
-                .with_system(handle_gesture_touch)
-                .with_system(handle_full_click_solution)
-                .with_system(click_nextlevel_button_solution)
-                .with_system(click_prevlevel_button_solution)
-                .with_system(click_back_button_solution)
-                .with_system(click_clone_button_solution)
-                .with_system(click_newsolution_button_solution)
-                .with_system(scroll_events_solution_touch)
-                .with_system(scroll_events_solution_mouse)
-                .with_system(click_deletesolution_button_solution)
-                .with_system(handle_gesture_mouse)
-                .with_system(handle_gesture_touch)
-                .with_system(handle_full_click_solution)
-                .with_system(make_board_and_title.before(handle_full_click_solution))
-                .with_system(advance_tick)
-            )
+            .add_systems(OnEnter(GameState::MenuSolutions), setup_solutions_menu)
+            .add_systems(OnExit(GameState::MenuSolutions), cleanup_solutions_menu)
+            .add_systems(Update, (
+                create_board,
+                handle_gesture_mouse,
+                handle_gesture_touch,
+                handle_full_click_solution,
+                click_nextlevel_button_solution,
+                click_prevlevel_button_solution,
+                click_back_button_solution,
+                click_clone_button_solution,
+                click_newsolution_button_solution,
+                scroll_events_solution_touch,
+                scroll_events_solution_mouse,
+                click_deletesolution_button_solution,
+                make_board_and_title,
+                advance_tick,
+            ).run_if(in_state(GameState::MenuSolutions)))
             .add_event::<BoardEvent>()
             .add_event::<RedrawCarouselEvent>()
             // add CarouselState resource:
@@ -119,7 +116,7 @@ pub struct CarouselTextNode;
 // EVENTS
 /////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Event)]
 pub struct RedrawCarouselEvent {
     pub maps: Option<Vec<SolutionData>>,
     pub level_name: String,
@@ -145,11 +142,11 @@ fn setup_solutions_menu(
     mut commands: Commands,
     font_assets: Res<FontAssets>,
     button_colors: Res<ButtonColors>,
-    windows: Res<Windows>,
-    selected_level: ResMut<SelectedLevel>, 
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    selected_level: ResMut<SelectedLevel>,
     // Resource CarouselState:
     mut redraw_carousel_event_writer: EventWriter<RedrawCarouselEvent>,
-) 
+)
 {
     let level_name = selected_level.level.clone();
     // Print the game name:
@@ -157,13 +154,13 @@ fn setup_solutions_menu(
     redraw_carousel_event_writer.send(RedrawCarouselEvent { maps: None, level_name: level_name, index: None});
     let font_size = 22.;
 
-    
-    let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(&windows);
+    let window = window_query.single();
+    let (width, margin, heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
     let prev_id = make_button("PREVIOUS LEVEL".to_string(), &mut commands, &font_assets, &button_colors, font_size, left, right , top, bottom, PrevLevelButton, Some(SolutionsMenuBotton));
     let next_id = make_button("NEXT LEVEL".to_string(), &mut commands, &font_assets, &button_colors, font_size, width * percent_left_right + margin/2., width - margin , top, bottom, SolutionsMenuBotton, Some(NextLevelButtonSolutions));
-    
-    
-    let ((l1, r1, b1, t1), (l2, r2, b2, t2), (l3, r3, b3, t3)) = get_sol_commands_coordinates(&windows);
+
+
+    let ((l1, r1, b1, t1), (l2, r2, b2, t2), (l3, r3, b3, t3)) = get_sol_commands_coordinates(window);
     println!("l1: {}, r1: {}, b1: {}, t1: {}", l1, r1, b1, t1);
     println!("l2: {}, r2: {}, b2: {}, t2: {}", l2, r2, b2, t2);
     println!("l3: {}, r3: {}, b3: {}, t3: {}", l3, r3, b3, t3);
@@ -174,7 +171,7 @@ fn setup_solutions_menu(
 
 
     // Upper::
-    let ((left_, right_, bottom_, top_), _, _) = get_upper_coordinates(&windows);
+    let ((left_, right_, bottom_, top_), _, _) = get_upper_coordinates(window);
     let back_id = make_button("BACK".to_string(), &mut commands, &font_assets, &button_colors, 22.*0.8, left_, right_, top_, bottom_, SolutionsMenuBotton, Some(BackButtonSolutions));
 }
 
@@ -184,9 +181,9 @@ fn setup_solutions_menu(
 
 
 fn cleanup_solutions_menu(
-        mut commands: Commands, 
+        mut commands: Commands,
         buttons: Query<Entity, With<SolutionsMenuBotton>>,
-        board_q: Query<Entity, With<Board>>, 
+        board_q: Query<Entity, With<Board>>,
         mut board_event_writer: EventWriter<BoardEvent>,
 ) {
     // For button in query:
@@ -206,22 +203,23 @@ fn cleanup_solutions_menu(
 // Listen to scrollwheenl events:
 pub fn scroll_events_solution_mouse(
     mut scroll_evr: EventReader<MouseWheel>,
-    board_q: Query<(Entity, &Transform), With<Board>>, 
-    textnode_q: Query<(Entity, &Transform, &Style), With<CarouselTextNode>>, 
-    windows: Res<Windows>, 
+    board_q: Query<(Entity, &Transform), With<Board>>,
+    textnode_q: Query<(Entity, &Transform, &Node), With<CarouselTextNode>>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut carousel_state: ResMut<CarouselState>,
     mut commands: Commands,
     mut selected_level: ResMut<SelectedLevel>,
 ) {
     use bevy::input::mouse::MouseScrollUnit;
-    for ev in scroll_evr.iter() {
+    for ev in scroll_evr.read() {
         let (vx, vy) = match ev.unit {
             MouseScrollUnit::Line => { (ev.x, ev.y) }
             MouseScrollUnit::Pixel => { (ev.x, ev.y) }
         };
         // v = vy if vx==0 else vx
         let v = if vx == 0. { vy } else { vx };
-        _scroll_event_solution(v, &mut carousel_state, &mut selected_level, &board_q, &textnode_q, &windows, &mut commands);
+        let window = window_query.single();
+        _scroll_event_solution(v, &mut carousel_state, &mut selected_level, &board_q, &textnode_q, window, &mut commands);
     }
 }
 
@@ -231,23 +229,24 @@ const TOUCH_SWIPE_SPEED_DECAY: f32 = 0.04;
 
 // Listen to scrollwheenl events:
 pub fn scroll_events_solution_touch(
-    board_q: Query<(Entity, &Transform), With<Board>>, 
-    textnode_q: Query<(Entity, &Transform, &Style), With<CarouselTextNode>>, 
+    board_q: Query<(Entity, &Transform), With<Board>>,
+    textnode_q: Query<(Entity, &Transform, &Node), With<CarouselTextNode>>,
     mut scroll_evr: EventReader<ScrollHappened>,
-    // touches: Res<Touches>, 
+    // touches: Res<Touches>,
     mut carousel_state: ResMut<CarouselState>,
     mut commands: Commands,
-    windows: Res<Windows>, 
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut selected_level: ResMut<SelectedLevel>,
 ) {
     // for finger in touches.iter() {
     //     *current_vy = Some(finger.delta().y);
     //     let finger_pos = format!("{:?}", finger.position());
     // }
-    for ev in scroll_evr.iter() {
+    for ev in scroll_evr.read() {
         let current_vx = Some(ev.vx);
-        if let Some(vx) = current_vx.as_ref() {     
-            _scroll_event_solution(*vx, &mut carousel_state, &mut selected_level, &board_q, &textnode_q, &windows, &mut commands);
+        if let Some(vx) = current_vx.as_ref() {
+            let window = window_query.single();
+            _scroll_event_solution(*vx, &mut carousel_state, &mut selected_level, &board_q, &textnode_q, window, &mut commands);
         }
     }
 }
@@ -256,16 +255,16 @@ pub fn scroll_events_solution_touch(
 
 fn click_back_button_solution(
     mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<BackButtonSolutions>)>,
-    mut game_state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     mut selected_level: ResMut<SelectedLevel>,
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 let level_name = selected_level.level.clone();
                 *selected_level = SelectedLevel::default();
                 selected_level.level = level_name;
-                game_state.set(GameState::MenuLevels);
+                next_state.set(GameState::MenuLevels);
             }
             _ => {}
         }
@@ -282,7 +281,7 @@ fn click_clone_button_solution(
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 let new_solution_data = selected_level.player_maps[selected_level.current_index as usize].clone();
                 let new_index = selected_level.current_index.clone()as usize + 1;
                 selected_level.player_maps.insert(new_index, new_solution_data);
@@ -301,11 +300,11 @@ fn click_newsolution_button_solution(
     // SelectedLevelSolvedDataEvent event writer:
     mut selected_level_solved_data_event_writer: EventWriter<SelectedLevelSolvedDataEvent>,
     mut redraw_carousel_event_writer: EventWriter<RedrawCarouselEvent>,
-    levels: Res<PuzzlesData>, 
+    levels: Res<PuzzlesData>,
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 let empty_map = levels.puzzles.iter().find(|p| p.name == selected_level.level.clone()).unwrap().parsed_map.clone();
                 let new_solution_data = SolutionData::new_from_string(empty_map, 0);
                 let new_index = selected_level.current_index.clone()as usize + 1;
@@ -328,7 +327,7 @@ fn click_deletesolution_button_solution(
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 if selected_level.player_maps.len() > 1 {
                     let index = selected_level.current_index as usize;
                     selected_level.player_maps.remove(index);
@@ -353,7 +352,7 @@ fn click_nextlevel_button_solution(
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 if let Some(next_puzzle) = get_next_puzzle(selected_level.level.clone(), &levels) {
                     let level_name = next_puzzle.name.clone();
                     *selected_level = SelectedLevel::default();
@@ -379,7 +378,7 @@ fn click_prevlevel_button_solution(
 ) {
     for interaction in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 if let Some(prev_puzzle) = get_prev_puzzle(selected_level.level.clone(), &levels) {
                     let level_name = prev_puzzle.name.clone();
                     *selected_level = SelectedLevel::default();
@@ -396,15 +395,15 @@ fn click_prevlevel_button_solution(
 // Listen to event:
 fn handle_full_click_solution(
     mut full_click_happened_reader: EventReader<FullClickHappened>,
-    mut state: ResMut<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
     mut selected_level: ResMut<SelectedLevel>,
     carousel_state: ResMut<CarouselState>,
-    windows: Res<Windows>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
-    for ev in full_click_happened_reader.iter() {
+    for ev in full_click_happened_reader.read() {
         // Get the board:
         // Check if ev.pos is inside the board:
-        let window = windows.get_primary().unwrap();
+        let window = window_query.single();
         let width = window.width() as f32;
         let height = window.height() as f32;
         let rect = Rect{left:0. - width / 2., top:height / 2. - width / 2.+25. - height / 2. , right:width - width / 2.,  bottom:height / 2. +width / 2. + 25. - height / 2. };
@@ -413,7 +412,7 @@ fn handle_full_click_solution(
             println!("UHHH.. Why in finished??");
             let map = selected_level.player_maps[selected_level.current_index as usize].clone();
             selected_level.current_map = map.map;
-            state.set(GameState::Playing);
+            next_state.set(GameState::Playing);
             // Write the event:
             // change_level_writer.send(ChangeLevel);
         }
@@ -422,24 +421,24 @@ fn handle_full_click_solution(
 
 
 fn make_board_and_title(
-    windows: Res<Windows>, 
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut commands: Commands,
     board_q: Query<Entity, With<Board>>,
     mut carousel_state: ResMut<CarouselState>,
     mut selected_level: ResMut<SelectedLevel>,
-    levels: Res<PuzzlesData>, 
+    levels: Res<PuzzlesData>,
     player_solutions_data: Res<SolutionsSavedData>,
-    level_name_query: Query<Entity, With<LevelNameElem>>, 
-    best_score_text_query: Query<Entity, With<BestScoreElem>>, 
-    mut board_event_writer: EventWriter<BoardEvent>, 
+    level_name_query: Query<Entity, With<LevelNameElem>>,
+    best_score_text_query: Query<Entity, With<BestScoreElem>>,
+    mut board_event_writer: EventWriter<BoardEvent>,
     mut redraw_carousel_event_reader: EventReader<RedrawCarouselEvent>,
-    font_assets: Res<FontAssets>, 
-    button_colors: Res<ButtonColors>, 
+    font_assets: Res<FontAssets>,
+    button_colors: Res<ButtonColors>,
     texts: Query<Entity, With<CarouselTextNode>>,
 ) {
-    for ev in redraw_carousel_event_reader.iter() {
+    for ev in redraw_carousel_event_reader.read() {
         // Get the window:
-        let w = windows.get_primary().unwrap();
+        let w = window_query.single();
         // Get width:
         let width = w.width();
         let height = w.height();
@@ -490,7 +489,7 @@ fn make_board_and_title(
 
 
         // Spawn the level name BUTTON:
-        let (_, (left_, right_, bottom_, top_), _) = get_upper_coordinates(&windows);
+        let (_, (left_, right_, bottom_, top_), _) = get_upper_coordinates(w);
         let name_id = make_text(ev.level_name.clone(), &mut commands, &font_assets, &button_colors, 20., left_, right_, top_, bottom_, SolutionsMenuBotton, Some(LevelNameElem));
 
         // Spawn the "pick solution" text:
@@ -517,7 +516,7 @@ fn make_board_and_title(
             make_text(text, &mut commands, &font_assets, &button_colors, 20., left_ + carousel_state.position_delta.x * ii as f32, right_ + carousel_state.position_delta.x * ii as f32, top_+75., bottom_+75., SolutionsMenuBotton, Some(CarouselTextNode));
         }
     }
-}    
+}
 
 
 
@@ -532,16 +531,16 @@ fn _scroll_event_solution(
         carousel_state: &mut ResMut<CarouselState>,
         selected_level: &mut ResMut<SelectedLevel>,
         board_q: &Query<(Entity, &Transform), With<Board>>,
-        textnode_q: &Query<(Entity, &Transform, &Style), With<CarouselTextNode>>,
-        windows: &Res<Windows>,
+        textnode_q: &Query<(Entity, &Transform, &Node), With<CarouselTextNode>>,
+        window: &Window,
         commands: &mut Commands) {
     if v<0. && carousel_state.timer.finished() && selected_level.current_index < selected_level.player_maps.len() as u16 - 1 {
-        _start_animation(true, board_q, textnode_q, windows, commands, carousel_state);
+        _start_animation(true, board_q, textnode_q, window, commands, carousel_state);
         selected_level.current_index += 1;
         selected_level.current_map = selected_level.player_maps[selected_level.current_index as usize].map.clone();
     } else if v>0. && carousel_state.timer.finished() && selected_level.current_index > 0
     {
-        _start_animation(false, board_q, textnode_q, windows, commands, carousel_state);
+        _start_animation(false, board_q, textnode_q, window, commands, carousel_state);
         selected_level.current_index -= 1;
         selected_level.current_map = selected_level.player_maps[selected_level.current_index as usize].map.clone();
     }
@@ -549,14 +548,13 @@ fn _scroll_event_solution(
 
 fn _start_animation(
     go_left: bool,
-    board_q: &Query<(Entity, &Transform), With<Board>>, 
-    textnode_q: &Query<(Entity, &Transform, &Style), With<CarouselTextNode>>, 
-    windows: &Res<Windows>, 
+    board_q: &Query<(Entity, &Transform), With<Board>>,
+    textnode_q: &Query<(Entity, &Transform, &Node), With<CarouselTextNode>>,
+    window: &Window,
     commands: &mut Commands,
     carousel_state: &mut ResMut<CarouselState>,
 ) {
     // Get the window:
-    let window = windows.get_primary().unwrap();
     let width = window.width() as f32;
     let delta = if go_left { - carousel_state.position_delta.x } else { carousel_state.position_delta.x };
     for (board_id, transform) in board_q.iter() {
@@ -568,16 +566,24 @@ fn _start_animation(
         );
         commands.entity(board_id).insert(Animator::new(tween),);
     }
-    // Same for text nodes:
-    for (textnode_id, transform, style) in textnode_q.iter() {
-        let textnode_pos = style.position;
-        let newright = textnode_pos.right.try_add(Val::Px(delta)).unwrap();  // , width).unwrap();
-        let newleft = textnode_pos.left.try_add(Val::Px(delta)).unwrap();  // , width).unwrap();
-        // let new_pos = UiRect{left: Val::Px(newleft), top: textnode_pos.top, right: Val::Px(newright), bottom: textnode_pos.bottom};
-        let new_pos = UiRect{left: newleft, top: textnode_pos.top, right: newright, bottom: textnode_pos.bottom};
+    // Same for text nodes - animate using left position change
+    for (textnode_id, transform, node) in textnode_q.iter() {
+        let current_left = match node.left {
+            Val::Px(v) => v,
+            _ => 0.0,
+        };
+        let current_right = match node.right {
+            Val::Px(v) => v,
+            _ => 0.0,
+        };
+        let new_left = current_left + delta;
+        let new_right = current_right - delta;
+        // Use transform animation instead of UiPositionLens which uses deprecated position field
+        let start_pos = transform.translation;
+        let end_pos = Vec3::new(start_pos.x + delta, start_pos.y, start_pos.z);
         let tween = Tween::new(
             EaseFunction::QuadraticInOut, Duration::from_millis(ANIMATION_TIME_STEP as u64),
-            UiPositionLens {start: textnode_pos, end: new_pos,},
+            TransformPositionLens {start: start_pos, end: end_pos,},
         );
         commands.entity(textnode_id).insert(Animator::new(tween),);
     }
@@ -587,9 +593,9 @@ fn _start_animation(
 }
 
 
-fn get_coordinates(windows: &Windows) -> (f32, f32, f32, f32, f32, f32, f32, f32) {
-    let width = windows.get_primary().unwrap().width();
-    let height = windows.get_primary().unwrap().height();
+fn get_coordinates(window: &Window) -> (f32, f32, f32, f32, f32, f32, f32, f32) {
+    let width = window.width();
+    let height = window.height();
     // Genius plan: I'll assume THE BOARD IS ALWAYS ABOUT AS WIDE AS THE SCREEN, AND ALSO SQUARE.
     // Boundaries (left right top bottom) of a Rectangle that occupies the LEFT HALF of the screen, minus a 20 pixel wide margin all around:
     let margin = 7.;
@@ -603,9 +609,9 @@ fn get_coordinates(windows: &Windows) -> (f32, f32, f32, f32, f32, f32, f32, f32
     (width, margin, button_height, percent_left_right, left, right, bottom, top)
 }
 
-fn get_upper_coordinates(windows: &Windows) -> ((f32, f32, f32, f32), (f32, f32, f32, f32), (f32, f32, f32, f32)) {
-    let width = windows.get_primary().unwrap().width();
-    let height = windows.get_primary().unwrap().height();
+fn get_upper_coordinates(window: &Window) -> ((f32, f32, f32, f32), (f32, f32, f32, f32), (f32, f32, f32, f32)) {
+    let width = window.width();
+    let height = window.height();
     // Genius plan: I'll assume THE BOARD IS ALWAYS ABOUT AS WIDE AS THE SCREEN, AND ALSO SQUARE.
     // Boundaries (left right top bottom) of a Rectangle that occupies the RIGHT HALF of the screen, minus a 20 pixel wide margin all around:
     let margin = 7.;
@@ -622,9 +628,9 @@ fn get_upper_coordinates(windows: &Windows) -> ((f32, f32, f32, f32), (f32, f32,
 
 
 
-fn get_sol_commands_coordinates(windows: &Windows) -> ((f32, f32, f32, f32), (f32, f32, f32, f32), (f32, f32, f32, f32)) {
-    let width = windows.get_primary().unwrap().width();
-    let height = windows.get_primary().unwrap().height();
+fn get_sol_commands_coordinates(window: &Window) -> ((f32, f32, f32, f32), (f32, f32, f32, f32), (f32, f32, f32, f32)) {
+    let width = window.width();
+    let height = window.height();
     // Genius plan: I'll assume THE BOARD IS ALWAYS ABOUT AS WIDE AS THE SCREEN, AND ALSO SQUARE.
     // Boundaries (left right top bottom) of a Rectangle that occupies the RIGHT HALF of the screen, minus a 20 pixel wide margin all around:
     let margin = 7.;

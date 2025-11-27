@@ -48,5 +48,8 @@ bevy_tweening = "0.12"
 winit = { version = "0.30", default-features = false }
 image = { version = "0.25", default-features = false }
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
 [build-dependencies]
 embed-resource = "1.4"

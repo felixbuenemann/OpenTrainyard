@@ -6,7 +6,7 @@ pub struct Player;
 
 use crate::all_puzzles_clean::PuzzlesData;
 use crate::data_saving::*;
-use crate::menu_utils::{PopupTimer, PopupType};
+use crate::menu_utils::{PopupTimer, PopupType, ScrollBarLimitsEvent};
 use crate::simulator::*;
 use crate::train::SpawnCosmeticTrainEvent;
 
@@ -57,12 +57,12 @@ pub enum TickMoment {
 }
 
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Event)]
 pub struct DoubleClickEvent {
     pub pos: Vec2,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Event)]
 pub enum TileHoverEvent {
     Newhover(Vec2),
     Released
@@ -76,14 +76,14 @@ pub enum TileHoverEvent {
 
 
 pub fn change_tick_speed(
-    // Liste to events of type ScrollBarLimits:
-    mut scroll_bar_limits_event_reader: EventReader<ScrollBarLimits>,
+    // Liste to events of type ScrollBarLimitsEvent:
+    mut scroll_bar_limits_event_reader: EventReader<ScrollBarLimitsEvent>,
     mut board_q: Query<&mut BoardTickStatus, With<Board>>,
     mut tick_params: ResMut<TicksInATick>,
 ){
     // Iter events:
-    for scroll_bar_limits_event in scroll_bar_limits_event_reader.iter() {
-        let new_nticks = (scroll_bar_limits_event.current as u32).max(4);
+    for scroll_bar_limits_event in scroll_bar_limits_event_reader.read() {
+        let new_nticks = (scroll_bar_limits_event.limits.current as u32).max(4);
         for mut board_tick_status in board_q.iter_mut() {    // Really, there's just 1 board
             // Find the fratction of the tick currently elapsed:
             let fraction = board_tick_status.current_tick_in_a_tick as f32 / tick_params.ticks as f32;
@@ -99,28 +99,28 @@ pub fn change_tick_speed(
 }
 
 
-pub fn tile_hover_touch(touches: Res<Touches>, windows: Res<Windows>, mut hover_event: EventWriter<TileHoverEvent>,) {
+pub fn tile_hover_touch(touches: Res<Touches>, window_query: Query<&Window, With<bevy::window::PrimaryWindow>>, mut hover_event: EventWriter<TileHoverEvent>,) {
+    let window = window_query.single();
     for finger in touches.iter() {
         if touches.just_released(finger.id()) {
             hover_event.send(TileHoverEvent::Released);
             break;
         }
         else {
-            let window = windows.get_primary().expect("no primary window");
             let pos = match window.cursor_position() { None => continue, Some(b) => b, };
             let window_size = Vec2::new(window.width(), window.height());
-            let pos = pos - window_size / 2.;            
+            let pos = pos - window_size / 2.;
             hover_event.send(TileHoverEvent::Newhover(pos));
         }
     }
 }
 
-pub fn tile_hover_mouse(mouse_input: Res<Input<MouseButton>>, windows: Res<Windows>,mut hover_event: EventWriter<TileHoverEvent>,) {
+pub fn tile_hover_mouse(mouse_input: Res<ButtonInput<MouseButton>>, window_query: Query<&Window, With<bevy::window::PrimaryWindow>>, mut hover_event: EventWriter<TileHoverEvent>,) {
+    let window = window_query.single();
     if mouse_input.pressed(MouseButton::Left) {
-            let window = windows.get_primary().expect("no primary window");
             let pos = match window.cursor_position() { None => return, Some(b) => b, };
             let window_size = Vec2::new(window.width(), window.height());
-            let pos = pos - window_size / 2.;            
+            let pos = pos - window_size / 2.;
             hover_event.send(TileHoverEvent::Newhover(pos));
     }
     else if mouse_input.any_just_released([MouseButton::Left, MouseButton::Right]) {
@@ -129,10 +129,10 @@ pub fn tile_hover_mouse(mouse_input: Res<Input<MouseButton>>, windows: Res<Windo
 }
 
 pub fn tile_hover_event(
-        mut board_q: Query<(&BoardDimensions, &mut BoardHoverable, &mut BoardTileMap, &BoardGameState), With<Board>>, 
+        mut board_q: Query<(&BoardDimensions, &mut BoardHoverable, &mut BoardTileMap, &BoardGameState), With<Board>>,
         mut hover_event: EventReader<TileHoverEvent>,
     ) {
-    for ev in hover_event.iter() {
+    for ev in hover_event.read() {
         // Match the 2 types of event:
         match ev {
             TileHoverEvent::Newhover(pos) => {
@@ -208,16 +208,17 @@ pub fn double_click_touch(
 }
 
 pub fn double_click_mouse(
-    mouse_input: Res<Input<MouseButton>>, 
-    windows: Res<Windows>, 
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut double_click_time: Local<DoubleClickInstant>,
     mut event_writer: EventWriter<DoubleClickEvent>,
 ) {
+    let window = window_query.single();
     if mouse_input.just_pressed(MouseButton::Left) {
         if let Some(double_click_instant) = double_click_time.instant {
             if double_click_instant.elapsed().as_millis() < 400 && double_click_instant.elapsed().as_millis() > 30 {
                 // println!("DOUBLE CLICK");
-                let pos = windows.get_primary().unwrap().cursor_position();
+                let pos = window.cursor_position();
                 if let Some(pos) = pos {
                     event_writer.send(DoubleClickEvent{pos: pos});
                 }
@@ -229,13 +230,13 @@ pub fn double_click_mouse(
 }
 
 pub fn double_click_event(
-    windows: Res<Windows>, 
-    mut board_q: Query<(&BoardDimensions, &mut BoardTileMap, &mut BoardHoverable, &BoardGameState), With<Board>>, 
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    mut board_q: Query<(&BoardDimensions, &mut BoardTileMap, &mut BoardHoverable, &BoardGameState), With<Board>>,
     mut event_reader: EventReader<DoubleClickEvent>,
 ) {
+    let window = window_query.single();
     for (board_dimensions, mut board_tile_map, mut board_hoverable, hovering_state) in board_q.iter_mut() { // It's never more than 1, but can very well be 0
-        for ev in event_reader.iter() {
-            let window = windows.get_primary().expect("no primary window");
+        for ev in event_reader.read() {
             let window_size = Vec2::new(window.width(), window.height());
             let pos = ev.pos - window_size / 2.;
             if *hovering_state != BoardGameState::Drawing {continue;}
@@ -267,7 +268,7 @@ pub fn listen_to_game_state_changes(
     tick_params: Res<TicksInATick>,
 ) {
     // For each event:
-    for ev in change_board_game_state_event_reader.iter() {
+    for ev in change_board_game_state_event_reader.read() {
         for (mut board_tilemap, mut hovering_state, mut tick_status) in board_q.iter_mut() {
             match *ev {
                 ChangeGameStateEvent{old_state: BoardGameState::Running(RunningState::Started), new_state: BoardGameState::Running(RunningState::Won)} => {

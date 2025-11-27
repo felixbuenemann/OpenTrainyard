@@ -228,7 +228,7 @@ const TRACKPAD_SPEED_MULTIPLIER: f32 = 0.8;
 // Listen to scrollwheenl events:
 fn scroll_events_levels_mouse(
     mut scroll_evr: EventReader<MouseWheel>,
-    mut button_query: Query<(&mut Style, &LevelButton),(With<Button>, With<LevelButton>),>,
+    mut button_query: Query<(&mut Node, &LevelButton),(With<Button>, With<LevelButton>),>,
     // resource:
     mut menu_limits: ResMut<MenuLimits>,
 ) {
@@ -241,9 +241,9 @@ fn scroll_events_levels_mouse(
         let delta = vy.clamp(menu_limits.min_firstbutton_heigh - menu_limits.current_firstbutton_heigh, menu_limits.max_firstbutton_heigh - menu_limits.current_firstbutton_heigh);
         if delta != 0. {
             menu_limits.current_firstbutton_heigh += delta;
-            for (mut style, _) in button_query.iter_mut() {
-                if let Val::Px(current) = style.top {
-                    style.top = Val::Px(current + delta);
+            for (mut node, _) in button_query.iter_mut() {
+                if let Val::Px(current) = node.top {
+                    node.top = Val::Px(current + delta);
                 }
             }
         }
@@ -258,7 +258,7 @@ const TOUCH_SWIPE_SPEED_DECAY: f32 = 0.04;
 // Listen to scrollwheenl events:
 fn scroll_events_levels_touch(
     mut current_vy: Local<Option<f32>>,
-    mut button_query: Query<(&mut Style, &LevelButton),(With<Button>, With<LevelButton>),>,
+    mut button_query: Query<(&mut Node, &LevelButton),(With<Button>, With<LevelButton>),>,
     mut scroll_evr: EventReader<ScrollHappened>,
     // touches: Res<Touches>,
     mut menu_limits: ResMut<MenuLimits>,
@@ -281,9 +281,9 @@ fn scroll_events_levels_touch(
         let delta = vy.clamp(menu_limits.min_firstbutton_heigh - menu_limits.current_firstbutton_heigh, menu_limits.max_firstbutton_heigh - menu_limits.current_firstbutton_heigh);
         if delta != 0. {
             menu_limits.current_firstbutton_heigh += delta;
-            for (mut style, _) in button_query.iter_mut() {
-                if let Val::Px(current) = style.top {
-                    style.top = Val::Px(current + delta);
+            for (mut node, _) in button_query.iter_mut() {
+                if let Val::Px(current) = node.top {
+                    node.top = Val::Px(current + delta);
                 }
             }
         }
@@ -350,8 +350,8 @@ pub fn make_top_banner(
     height : f32,
 ) -> Entity {
     // Make a top banner that is always at the top 100 pixels of the window:
-    let mut ec = commands.spawn(ImageBundle {
-        style: Style {
+    let mut ec = commands.spawn((
+        Node {
             position_type: PositionType::Absolute,
             width: Val::Px(pright - pleft),
             height: Val::Px(height),
@@ -360,37 +360,30 @@ pub fn make_top_banner(
             align_items: AlignItems::Center, // Baseline, // FlexEnd, // Stretch, // Center, // I have to say, this was cool ....
             top: Val::Px(0.),
             left: Val::Px(pleft),
-
             ..default()
         },
-        background_color: BackgroundColor(button_colors.hovered),
-        transform: Transform::from_xyz(0., 0., 2.),
-        ..default()
-    });
+        BackgroundColor(button_colors.hovered),
+        Transform::from_xyz(0., 0., 2.),
+    ));
     ec.insert(Banner{});
     let ec_id = ec.id();
     // Add a child TextBundle that says "Pick level:"
-    let text_id = commands.spawn(TextBundle {
-        style: Style {
+    let text_id = commands.spawn((
+        Text::new("Pick level:"),
+        TextFont {
+            font: font_assets.fira_sans.clone(),
+            font_size: font_size,
+            ..default()
+        },
+        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        TextLayout::new_with_justify(JustifyText::Center),
+        Node {
             position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
             ..default()
         },
-        text: Text {
-            sections: vec![TextSection {
-                value: "Pick level:".to_string(),
-                style: TextStyle {
-                    font: font_assets.fira_sans.clone(),
-                    font_size: font_size,
-                    color: Color::srgb(0.9, 0.9, 0.9),
-                },
-            }],
-            justify: JustifyText::Center,
-        ..default()
-    },
-    ..default()
-    }).id();
-    commands.entity(ec_id) .push_children(&[text_id]);
+    )).id();
+    commands.entity(ec_id).push_children(&[text_id]);
 
     // Make a "Back" button at the left of  the banner, centered vertically:
     let margin = 10.; // Margin around the "Back" button
@@ -400,7 +393,7 @@ pub fn make_top_banner(
     let back_left = margin;
     let back_right = margin + button_width;
     let back_id = make_button("BACK".to_string(), commands, &font_assets, &button_colors, 20., back_left, back_right, back_top, back_bottom, BackButtonLevels{}, None::<Banner>);
-    commands.entity(ec_id) .push_children(&[back_id]);
+    commands.entity(ec_id).push_children(&[back_id]);
     ec_id
 }
 
@@ -419,8 +412,9 @@ pub fn make_menu_elem(
     pbottom: f32,
     tile_assets: &TileAssets,
 ) -> Entity {
-    let mut ec = commands.spawn((ButtonBundle {
-        style: Style {
+    let mut ec = commands.spawn((
+        Button,
+        Node {
             position_type: PositionType::Absolute,
             width: Val::Px(pright - pleft),
             height: Val::Px(ptop - pbottom),
@@ -431,69 +425,53 @@ pub fn make_menu_elem(
             left: Val::Px(pleft),
             ..default()
         },
-        background_color: button_colors.normal.into(),
-        ..default()
-    },
-    ButtonData{text: name.clone()})
-    );
+        BackgroundColor(button_colors.normal),
+        ButtonData{text: name.clone()},
+    ));
     ec.with_children(|parent| {
-        parent.spawn(TextBundle {
-            text: Text {
-                sections: vec![TextSection {
-                    value: name,
-                    style: TextStyle {
-                        font: font_assets.fira_sans.clone(),
-                        font_size: font_size,
-                        color: Color::srgb(0.9, 0.9, 0.9),
-                    },
-                }],
-                justify: JustifyText::Left,
+        parent.spawn((
+            Text::new(name),
+            TextFont {
+                font: font_assets.fira_sans.clone(),
+                font_size: font_size,
                 ..default()
             },
-            style: Style{margin: UiRect{left: Val::Px(20.), ..default()}, ..default()},
-            ..default()
-        });
-        if score != "".to_string() {
-            parent.spawn(
-                // NodeBundle{..default()}).with_children(|parent| {parent.spawn(
-                ImageBundle {
-                    image: UiImage::new(tile_assets.tick.clone()),
-                    // transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-                    style: Style {
-                        //display: (), position_type: (), direction: (), flex_direction: (), flex_wrap: (), align_items: (), align_self: (), align_content: (), justify_content: (), position: (), margin: (), padding: (), border: (), flex_grow: (), flex_shrink: (), flex_basis: (), size: (), min_size: (), max_size: (), aspect_ratio: (), overflow: () }
-                        // Center vertically and put at 66% of the width:
-                        position_type: PositionType::Relative,
-                        margin: UiRect{right: Val::Px(2.), left: Val::Px(70.), ..default()},
-                        // Align to the RIGHT of the parent object:
-                        align_items: AlignItems::FlexEnd,
-
-                        ..default()
-
-                    },
-                    // Scale down to 50% of the width:
-                    transform: Transform{..default()}.with_scale(Vec3::splat(0.45)),
-                    ..default()
-            });
-            parent.spawn(TextBundle {
-                text: Text {
-                    sections: vec![TextSection {
-                        value: score,
-                        style: TextStyle {
-                            font: font_assets.fira_sans.clone(),
-                            font_size: font_size,
-                            color: Color::srgb(0.9, 0.9, 0.9),
-                        },
-                    }],
-                    justify: JustifyText::Right,
-                    ..default()
-                },
-                style: Style{
-                    align_items: AlignItems::FlexEnd,
-                    margin: UiRect{left: Val::Px(2.), right: Val::Px(20.), ..default()}, ..default()
-                },
+            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+            TextLayout::new_with_justify(JustifyText::Left),
+            Node {
+                margin: UiRect{left: Val::Px(20.), ..default()},
                 ..default()
-            });
-        // }); // HERE
+            },
+        ));
+        if score != "".to_string() {
+            parent.spawn((
+                UiImage::new(tile_assets.tick.clone()),
+                Node {
+                    // Center vertically and put at 66% of the width:
+                    position_type: PositionType::Relative,
+                    margin: UiRect{right: Val::Px(2.), left: Val::Px(70.), ..default()},
+                    // Align to the RIGHT of the parent object:
+                    align_items: AlignItems::FlexEnd,
+                    ..default()
+                },
+                // Scale down to 50% of the width:
+                Transform::default().with_scale(Vec3::splat(0.45)),
+            ));
+            parent.spawn((
+                Text::new(score),
+                TextFont {
+                    font: font_assets.fira_sans.clone(),
+                    font_size: font_size,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                TextLayout::new_with_justify(JustifyText::Right),
+                Node {
+                    align_items: AlignItems::FlexEnd,
+                    margin: UiRect{left: Val::Px(2.), right: Val::Px(20.), ..default()},
+                    ..default()
+                },
+            ));
         };
     });
     ec.insert(LevelButton{});

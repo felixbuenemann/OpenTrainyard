@@ -175,7 +175,8 @@ pub struct BoardBundle {
     pub sprite: Sprite,
     pub texture: Handle<Image>,
     pub visibility: Visibility, // User indication of whether an entity is visible
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 
 
@@ -183,7 +184,7 @@ pub struct BoardBundle {
 // EVENTS
 /////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Event)]
 pub enum BoardEvent {
     Make{
         map_name: String, 
@@ -197,7 +198,7 @@ pub enum BoardEvent {
 
 
 // ChangeGameStateEvent:
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Event)]
 pub struct ChangeGameStateEvent {
     pub new_state: BoardGameState,
     pub old_state: BoardGameState,
@@ -224,21 +225,20 @@ pub fn create_board(
     mut commands: Commands,
     board_assets_map: Res<TileAssets>,
     board_options: Res<BoardOptionsDefault>,
-    windows: Res<Windows>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut board_event_reader: EventReader<BoardEvent>,
 ) {
-    for event in board_event_reader.iter() {
+    for event in board_event_reader.read() {
         match event {
             BoardEvent::Make{map_name, map, scale, position, index} => {
                 // Print map:
                 let tile_map: Vec<Vec<Tile>> = parse_map(map);
                 let n_width_ = tile_map.len();
                 let n_height_ = tile_map.len();
+                let window = window_query.single();
                 let tile_size = match board_options.tile_size {
                     TileSize::Fixed(v) => v,
-                    TileSize::Adaptive =>  (
-                        windows.get_primary().unwrap().width() / n_width_ as f32).min(
-                            windows.get_primary().unwrap().height() / n_height_ as f32) * 0.92
+                    TileSize::Adaptive => (window.width() / n_width_ as f32).min(window.height() / n_height_ as f32) * 0.92
                 };
                 // If position is None, we use the default position:
                 let board_position = match position {
@@ -288,14 +288,15 @@ pub fn create_board(
                     },
                     options: board_dimensions,
                     sprite: Sprite{
-                        color: Color::rgb(0.5, 0.5, 0.5),
+                        color: Color::srgb(0.5, 0.5, 0.5),
                         ..default()
                     },
                     hovering_state: BoardGameState::Drawing,
                     global_transform: GlobalTransform::default(),
                     texture: default(),
                     visibility: default(),
-                    computed_visibility: default(),
+                    inherited_visibility: default(),
+                    view_visibility: default(),
                     board_tick_status: default(),
                 }).id();
                 
@@ -320,7 +321,7 @@ pub fn cleanup_board(
     // Read event:
     mut board_event_reader: EventReader<BoardEvent>,
 ) {
-    for event in board_event_reader.iter() {
+    for event in board_event_reader.read() {
         match event {
             BoardEvent::Delete => {
                 // Delete all boards:
