@@ -285,15 +285,22 @@ pub fn handle_gesture_touch(
     mut scroll_happened_writer: MessageWriter<ScrollHappened>,
 ) {
     let window = window_query.single().unwrap();
+
+    // Handle just released touches first (they're not in iter(), only in iter_just_released())
+    for finger in touches.iter_just_released() {
+        let touch_pos = Some(finger.position());
+        _touch_event_handler_with_pos(window, &mut click_position, ClickState::JustReleased, touch_pos, &mut full_click_happened_writer, &mut scroll_happened_writer);
+        return;
+    }
+
+    // Handle active touches (pressed or hovering)
     for finger in touches.iter() {
-        if touches.just_released(finger.id()) {
-            _touch_event_handler(window, &mut click_position, ClickState::JustReleased, &mut full_click_happened_writer, &mut scroll_happened_writer);
-        }
-        else if touches.just_pressed(finger.id()) {
-            _touch_event_handler(window, &mut click_position, ClickState::JustClicked, &mut full_click_happened_writer, &mut scroll_happened_writer);
+        let touch_pos = Some(finger.position());
+        if touches.just_pressed(finger.id()) {
+            _touch_event_handler_with_pos(window, &mut click_position, ClickState::JustClicked, touch_pos, &mut full_click_happened_writer, &mut scroll_happened_writer);
         }
         else {
-            _touch_event_handler(window, &mut click_position, ClickState::Hovering, &mut full_click_happened_writer, &mut scroll_happened_writer);
+            _touch_event_handler_with_pos(window, &mut click_position, ClickState::Hovering, touch_pos, &mut full_click_happened_writer, &mut scroll_happened_writer);
         }
         return;
     }
@@ -365,8 +372,19 @@ fn _touch_event_handler(
     scroll_happened_writer: &mut MessageWriter<ScrollHappened>
 ) {
     let pos = window.cursor_position();
+    _touch_event_handler_with_pos(window, click_position, state, pos, full_click_happened_writer, scroll_happened_writer);
+}
+
+fn _touch_event_handler_with_pos(
+    window: &Window,
+    click_position: &mut ClickPosition,
+    state: ClickState,
+    pos: Option<Vec2>,
+    full_click_happened_writer: &mut MessageWriter<FullClickHappened>,
+    scroll_happened_writer: &mut MessageWriter<ScrollHappened>
+) {
     let window_size = Vec2::new(window.width(), window.height());
-    // If Some(Vec2), substract Window size: 
+    // If Some(Vec2), substract Window size:
     let clicked_pos = match pos {
         Some(pos) => Some(pos - window_size / 2.),
         None => None,

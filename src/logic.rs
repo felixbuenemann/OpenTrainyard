@@ -105,7 +105,8 @@ pub fn tile_hover_touch(touches: Res<Touches>, window_query: Query<&Window, With
             break;
         }
         else {
-            let pos = match window.cursor_position() { None => continue, Some(b) => b, };
+            // Use finger.position() for touch instead of cursor_position()
+            let pos = finger.position();
             let window_size = Vec2::new(window.width(), window.height());
             // Convert screen coords to world coords (flip Y axis)
             let pos = Vec2::new(pos.x - window_size.x / 2., window_size.y / 2. - pos.y);
