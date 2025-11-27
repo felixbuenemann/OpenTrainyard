@@ -333,8 +333,8 @@ pub fn logic_tick(
     ) {
         
     for (board_id, _board_dimensions, mut board_tilemap, mut game_state, mut tick_status) in board_q.iter_mut() {    // Really, there's just 1 board
-        // If board_hoverable.game_state is NOT running, continue:
-        match *game_state { BoardGameState::Running(_) => {}, _ => {continue;}}
+        // If board_hoverable.game_state is NOT running (Started), skip - don't tick after Won/Crashed
+        match *game_state { BoardGameState::Running(RunningState::Started) => {}, _ => {continue;}}
         
         if (tick_status.current_tick_in_a_tick >= tick_params.ticks -1 && tick_status.first_half == Section::Second) || (tick_status.first_half == Section::NotEvenBegun && tick_status.current_tick_in_a_tick == 0) {
             if tick_status.first_half == Section::NotEvenBegun { tick_status.current_game_tick = 0; }  // if NoteEvenBegun, set game_tick to 0
