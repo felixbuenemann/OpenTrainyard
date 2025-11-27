@@ -107,7 +107,8 @@ pub fn tile_hover_touch(touches: Res<Touches>, window_query: Query<&Window, With
         else {
             let pos = match window.cursor_position() { None => continue, Some(b) => b, };
             let window_size = Vec2::new(window.width(), window.height());
-            let pos = pos - window_size / 2.;
+            // Convert screen coords to world coords (flip Y axis)
+            let pos = Vec2::new(pos.x - window_size.x / 2., window_size.y / 2. - pos.y);
             hover_event.send(TileHoverEvent::Newhover(pos));
         }
     }
@@ -118,7 +119,8 @@ pub fn tile_hover_mouse(mouse_input: Res<ButtonInput<MouseButton>>, window_query
     if mouse_input.pressed(MouseButton::Left) {
             let pos = match window.cursor_position() { None => return, Some(b) => b, };
             let window_size = Vec2::new(window.width(), window.height());
-            let pos = pos - window_size / 2.;
+            // Convert screen coords to world coords (flip Y axis)
+            let pos = Vec2::new(pos.x - window_size.x / 2., window_size.y / 2. - pos.y);
             hover_event.send(TileHoverEvent::Newhover(pos));
     }
     else if mouse_input.any_just_released([MouseButton::Left, MouseButton::Right]) {
