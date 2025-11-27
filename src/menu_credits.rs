@@ -74,7 +74,7 @@ fn setup_menu_credits(
         Text::new(credits_text),
         TextFont {
             font: font_assets.fira_sans.clone(),
-            font_size: 22.,
+            font_size: 15.,
             ..default()
         },
         TextColor(Color::srgb(0.9, 0.9, 0.9)),

@@ -652,7 +652,7 @@ pub fn make_tutorial_popup(
     button_colors: &ButtonColors,
 )
 {
-    let font_size = 20.;
+    let font_size = 14.;
 // A fixed positioned popup rectangle with sides at 10% to 90& of screen width, and 45% to 55% of screen height. nside, print text.
     let popup_id = commands.spawn((
         Node {
@@ -690,7 +690,7 @@ pub fn make_tutorial_popup(
             Text::new(text_2_),
             TextFont {
                 font: font_assets.fira_sans.clone(),
-                font_size: 12.,
+                font_size: 8.,
                 ..default()
             },
             TextColor(Color::srgb(0.6, 0.6, 0.6)),
@@ -749,7 +749,7 @@ pub fn make_victory_popup(
     tile_assets: &TileAssets,
 )
 {
-    let font_size = 20.;
+    let font_size = 14.;
 // A fixed positioned popup rectangle with sides at 10% to 90& of screen width, and 45% to 55% of screen height. nside, print text.
     let popup_id = commands.spawn((
         Node {

@@ -117,7 +117,7 @@ fn setup_menu(
         Text::new("Trainyard"),
         TextFont {
             font: font_assets.fira_sans.clone(),
-            font_size: 45.,
+            font_size: 32.,
             ..default()
         },
         TextColor(Color::srgb(0.9, 0.9, 0.9)),

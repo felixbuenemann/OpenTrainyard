@@ -28,7 +28,7 @@ const TIME_STEP: f32 = 1.0 / 120.0;
 // COMPONENTS
 /////////////////////////////////////////////////////////////////////////////////////
 
-const FONT_SIZE : f32 = 22.0;
+const FONT_SIZE : f32 = 16.0;
 
 pub struct MainGamePlugin;
 

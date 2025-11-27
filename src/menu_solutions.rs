@@ -151,7 +151,7 @@ fn setup_solutions_menu(
     // Print the game name:
     println!("LAUNCHED: {}", level_name.clone());
     redraw_carousel_event_writer.send(RedrawCarouselEvent { maps: None, level_name: level_name, index: None});
-    let font_size = 22.;
+    let font_size = 15.;
 
     let window = window_query.single();
     let (width, margin, _heigh, percent_left_right, left, right, bottom, top) = get_coordinates(window);
