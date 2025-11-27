@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_tweening::*;
-use bevy_tweening::lens::*;
 
 use crate::simulator::*;
 
@@ -43,6 +42,30 @@ impl Default for TrainBundle {
 
 #[derive(Component)]
 pub struct CosmeticTrain {} // For vfx of train disappearing
+
+/// Component to store animation state for cosmetic trains
+/// This allows us to animate both scale and alpha with a single TweenAnim
+#[derive(Component)]
+pub struct CosmeticTrainAnim {
+    pub base_scale: Vec3,
+    pub scale_factor: f32,  // 1.0 = base scale, 1.7 = 170% of base
+    pub alpha: f32,         // 0.0 to 1.0
+}
+
+/// Custom lens that animates both scale_factor and alpha together
+pub struct CosmeticTrainAnimLens {
+    pub start_scale_factor: f32,
+    pub end_scale_factor: f32,
+    pub start_alpha: f32,
+    pub end_alpha: f32,
+}
+
+impl Lens<CosmeticTrainAnim> for CosmeticTrainAnimLens {
+    fn lerp(&mut self, mut target: Mut<CosmeticTrainAnim>, ratio: f32) {
+        target.scale_factor = self.start_scale_factor + (self.end_scale_factor - self.start_scale_factor) * ratio;
+        target.alpha = self.start_alpha + (self.end_alpha - self.start_alpha) * ratio;
+    }
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -129,9 +152,9 @@ pub fn spawn_cosmetic_trains_event(
 
 pub fn delete_cosmetic_trains_with_finished_animations(
     mut commands: Commands,
-    trains_q: Query<(Entity, &Train, &TweenAnim), With<CosmeticTrain>>,
+    trains_q: Query<(Entity, &TweenAnim), With<CosmeticTrain>>,
 ) {
-    for (train_entity, _, animator) in trains_q.iter() {
+    for (train_entity, animator) in trains_q.iter() {
         // Check if animation is completed by comparing elapsed time with total duration
         let tweenable = animator.tweenable();
         if let bevy_tweening::TotalDuration::Finite(total) = tweenable.total_duration() {
@@ -139,6 +162,18 @@ pub fn delete_cosmetic_trains_with_finished_animations(
                 if let Ok(mut train) = commands.get_entity(train_entity) {train.despawn();}
             }
         }
+    }
+}
+
+/// System that applies CosmeticTrainAnim values to Transform and Sprite
+pub fn apply_cosmetic_train_anim(
+    mut trains_q: Query<(&CosmeticTrainAnim, &mut Transform, &mut Sprite), With<CosmeticTrain>>,
+) {
+    for (anim, mut transform, mut sprite) in trains_q.iter_mut() {
+        // Apply scale
+        transform.scale = anim.base_scale * anim.scale_factor;
+        // Apply alpha to sprite color
+        sprite.color = Color::srgba(1., 1., 1., anim.alpha);
     }
 }
 
@@ -222,15 +257,18 @@ pub fn make_train(train: Train, commands: &mut Commands, train_assets: &TrainAss
 
 pub fn make_train_cosmetic(train: Train, commands: &mut Commands, train_assets: &TrainAssets, board_dimensions: &BoardDimensions, tick_rateo: f32) -> Entity {
     let transform = get_train_transform(train, board_dimensions, tick_rateo);
-    let scale = transform.scale;
+    let base_scale = transform.scale;
 
-    let t1 = Tween::new(
-        EaseFunction::CubicOut, std::time::Duration::from_millis(400 as u64),
-        TransformScaleLens {start: scale, end: scale * 1.7},
-    );
-    let t2 = Tween::new(
-        EaseFunction::CubicOut, std::time::Duration::from_millis(400 as u64),
-        SpriteColorLens {start: Color::srgba(1., 1., 1., 0.8), end: Color::srgba(1., 1., 1., 0.),},
+    // Use custom lens that animates both scale and alpha together
+    let tween = Tween::new(
+        EaseFunction::CubicOut,
+        std::time::Duration::from_millis(400),
+        CosmeticTrainAnimLens {
+            start_scale_factor: 1.0,
+            end_scale_factor: 1.7,
+            start_alpha: 0.8,
+            end_alpha: 0.0,
+        },
     );
 
     let child = commands.spawn((
@@ -238,14 +276,19 @@ pub fn make_train_cosmetic(train: Train, commands: &mut Commands, train_assets: 
             train: train,
             sprite: Sprite {
                 image: get_train_image(train_assets, train.c),
+                color: Color::srgba(1., 1., 1., 0.8), // Start with alpha 0.8
                 ..default()
             },
             transform,
             ..default()
         },
         CosmeticTrain{},
-        TweenAnim::new(t1),
-        TweenAnim::new(t2),
+        CosmeticTrainAnim {
+            base_scale,
+            scale_factor: 1.0,
+            alpha: 0.8,
+        },
+        TweenAnim::new(tween),
     ));
 
     return child.id();

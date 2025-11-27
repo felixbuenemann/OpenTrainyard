@@ -63,7 +63,10 @@ impl Plugin for MainGamePlugin {
                 add_running_status_indicator,
                 show_track_number_in_title_text,
                 style_run_button,
+            ).run_if(in_state(GameState::Playing)))
+            .add_systems(Update, (
                 spawn_cosmetic_trains_event,
+                apply_cosmetic_train_anim,
                 delete_cosmetic_trains_with_finished_animations,
             ).run_if(in_state(GameState::Playing)))
             .add_systems(FixedUpdate, logic_tick.run_if(in_state(GameState::Playing)))
