@@ -85,7 +85,7 @@ fn setup_menu_credits(
             ..default()
         },
     )).id();
-    commands.entity(ec_id).push_children(&[text_id]);
+    commands.entity(ec_id).add_children(&[text_id]);
 
 
     let margin_left = 13.;

@@ -76,34 +76,25 @@ fn setup_menu(
     let width = window.width();
     let height = window.height();
     println!("YES IM HERE. good...");
-    commands.spawn(
-        // NodeBundle{..default()}).with_children(|parent| {parent.spawn(
-        SpriteBundle {
-            texture: tile_assets.background_solutions.clone(),
-            // transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(width, height)),
-                ..default()
-            },
-            // Scale down to 50% of the width:
-            transform: Transform::from_xyz(0., 0., 0.),
+    commands.spawn((
+        Sprite {
+            image: tile_assets.background_solutions.clone(),
+            custom_size: Some(Vec2::new(width, height)),
             ..default()
-    });
+        },
+        Transform::from_xyz(0., 0., 0.),
+    ));
 
     // Spawn UIImage icon_crop from assets above the button:
-    commands.spawn(
-        (SpriteBundle {
-            texture: tile_assets.icon_crop.clone(),
-            // transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(width / 2., width / 2.)),
-                ..default()
-            },
-            // Scale down to 50% of the width:
-            transform: Transform::from_xyz(0., height * 0.11, 0.),
+    commands.spawn((
+        Sprite {
+            image: tile_assets.icon_crop.clone(),
+            custom_size: Some(Vec2::new(width / 2., width / 2.)),
             ..default()
-    },
-    MainMenuElem{}));
+        },
+        Transform::from_xyz(0., height * 0.11, 0.),
+        MainMenuElem{},
+    ));
         
     //Write "Trainyard" at the top of the page:
     let mut ec = commands.spawn((
@@ -137,7 +128,7 @@ fn setup_menu(
             ..default()
         },
     )).id();
-    commands.entity(ec_id).push_children(&[text_id]);
+    commands.entity(ec_id).add_children(&[text_id]);
 
     let rect_width = 120.;
     let rect_height = 50.;

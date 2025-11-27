@@ -19,11 +19,10 @@ use crate::loading::TrainAssets;
 pub struct TrainBundle{
     pub train: Train,
 
-    // Flattened SpriteBundle #[bundle] : SO NICE!!
+    // In Bevy 0.15, Sprite contains the image handle directly
     pub sprite: Sprite,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
-    pub texture: Handle<Image>,
     pub visibility: Visibility, // User indication of whether an entity is visible
     pub inherited_visibility: InheritedVisibility,
     pub view_visibility: ViewVisibility,
@@ -35,7 +34,6 @@ impl Default for TrainBundle {
             sprite: default(),
             transform: default(),
             global_transform: default(),
-            texture: default(),
             visibility: default(),
             inherited_visibility: default(),
             view_visibility: default(),
@@ -80,7 +78,7 @@ pub fn respawn_trains(
         // Spawn new trains
         for train in board_tilemap.current_trains.iter() {
             let child_id = make_train(*train, &mut commands, &train_assets, &board_dimensions, board_tick_status.current_tick_in_a_tick as f32 / tick_params.ticks as f32);
-            commands.entity(board_id).push_children(&[child_id]);
+            commands.entity(board_id).add_children(&[child_id]);
         }
     }
 }
@@ -124,7 +122,7 @@ pub fn spawn_cosmetic_trains_event(
         let train = event.train;
         let board_id = event.board_id;
         let child_id = make_train_cosmetic(train, &mut commands, &train_assets, &board_dimensions, board_tick_status.current_tick_in_a_tick as f32 / tick_params.ticks as f32);
-        commands.entity(board_id).push_children(&[child_id]);// add the child to the parent
+        commands.entity(board_id).add_children(&[child_id]);// add the child to the parent
     }
 }
 
@@ -208,9 +206,11 @@ fn get_train_transform(t:Train, board: &BoardDimensions, tick_rateo: f32) -> Tra
 pub fn make_train(train: Train, commands: &mut Commands, train_assets: &TrainAssets, board_dimensions: &BoardDimensions, tick_rateo: f32) -> Entity {
     let child = commands.spawn(TrainBundle {
         train: train,
-        texture: get_train_image(train_assets, train.c),
+        sprite: Sprite {
+            image: get_train_image(train_assets, train.c),
+            ..default()
+        },
         transform: get_train_transform(train, board_dimensions, tick_rateo),
-        // sprite: Sprite { custom_size: Some(Vec2::splat(board_dimensions.tile_size)), color: Color::WHITE, ..default()},
         ..default()
     });
     return child.id();
@@ -221,20 +221,22 @@ pub fn make_train_cosmetic(train: Train, commands: &mut Commands, train_assets: 
     let scale = transform.scale;
 
     let t1 = Tween::new(
-        EaseFunction::CubicOut, std::time::Duration::from_millis(400 as u64), 
+        EaseFunction::CubicOut, std::time::Duration::from_millis(400 as u64),
         TransformScaleLens {start: scale, end: scale * 1.7},
     );
     let t2 = Tween::new(
-        EaseFunction::CubicOut, std::time::Duration::from_millis(400 as u64), 
+        EaseFunction::CubicOut, std::time::Duration::from_millis(400 as u64),
         SpriteColorLens {start: Color::srgba(1., 1., 1., 0.8), end: Color::srgba(1., 1., 1., 0.),},
     );
 
     let child = commands.spawn((
         TrainBundle {
             train: train,
-            texture: get_train_image(train_assets, train.c),
+            sprite: Sprite {
+                image: get_train_image(train_assets, train.c),
+                ..default()
+            },
             transform,
-            // sprite: Sprite { custom_size: Some(Vec2::splat(board_dimensions.tile_size)), color: Color::WHITE, ..default()},
             ..default()
         },
         CosmeticTrain{},

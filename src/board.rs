@@ -169,11 +169,10 @@ pub struct BoardBundle {
     pub options: BoardDimensions,
     pub hovering_state: BoardGameState,
     pub board_tick_status: BoardTickStatus,
-    // Flattened SpriteBundle #[bundle] : SO NICE!!
-    pub transform: Transform, // This component is required until https://github.com/bevyengine/bevy/pull/2331 is merged
+    // In Bevy 0.15, Sprite contains the image handle directly (if needed)
+    pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub sprite: Sprite,
-    pub texture: Handle<Image>,
     pub visibility: Visibility, // User indication of whether an entity is visible
     pub inherited_visibility: InheritedVisibility,
     pub view_visibility: ViewVisibility,
@@ -272,8 +271,8 @@ pub fn create_board(
                 // We add the main resource of the game, the board
                 let board_entity = commands.spawn(BoardBundle {
                     board: Board,
-                    transform: Transform::from_translation(board_dimensions.position).with_scale(Vec3{x: *scale, y: *scale, z: 1.}), // This component is required until
-                    // global_transform: GlobalTransform::default(),
+                    transform: Transform::from_translation(board_dimensions.position).with_scale(Vec3{x: *scale, y: *scale, z: 1.}),
+                    global_transform: GlobalTransform::default(),
                     tile_map: BoardTileMap {
                         map: tile_map.clone(),
                         map_string: map.clone(),
@@ -292,8 +291,6 @@ pub fn create_board(
                         ..default()
                     },
                     hovering_state: BoardGameState::Drawing,
-                    global_transform: GlobalTransform::default(),
-                    texture: default(),
                     visibility: default(),
                     inherited_visibility: default(),
                     view_visibility: default(),
@@ -306,7 +303,7 @@ pub fn create_board(
                         let coordinates = Coordinates { x: x as u16, y: y as u16,};
                         let child_id = make_tile(*tile, &mut commands, &board_assets_map, board_dimensions.tile_size, coordinates);
                         
-                        commands.entity(board_entity).push_children(&[child_id]);// add the child to the parent
+                        commands.entity(board_entity).add_children(&[child_id]);// add the child to the parent
                     }
                 }
             },

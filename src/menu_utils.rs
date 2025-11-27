@@ -492,8 +492,8 @@ pub fn make_scrollbar(
         ..default()
     })
     .id();
-    commands.entity(handle_id).push_children(&[text_id]);// add the child to the parent
-    commands.entity(back_id).push_children(&[handle_id]); // add the child to the parent
+    commands.entity(handle_id).add_children(&[text_id]);// add the child to the parent
+    commands.entity(back_id).add_children(&[handle_id]); // add the child to the parent
     return back_id;
 }
 
@@ -684,7 +684,7 @@ pub fn make_tutorial_popup(
             ..default()
         },
     )).id();
-    commands.entity(popup_id).push_children(&[text_id]);// add the child to the parent
+    commands.entity(popup_id).add_children(&[text_id]);// add the child to the parent
     if let Some(text_2_) = text_2 {
         let text2_id = commands.spawn((
             Text::new(text_2_),
@@ -705,7 +705,7 @@ pub fn make_tutorial_popup(
                 ..default()
             },
         )).id();
-        commands.entity(popup_id).push_children(&[text2_id]);// add the child to the parent
+        commands.entity(popup_id).add_children(&[text2_id]);// add the child to the parent
     }
 
     let but_id = commands.spawn((
@@ -725,7 +725,7 @@ pub fn make_tutorial_popup(
         BackgroundColor(button_colors.normal),
         ClosePopupButton{},
     )).id();
-    commands.entity(popup_id).push_children(&[but_id]);// add the child to the parent
+    commands.entity(popup_id).add_children(&[but_id]);// add the child to the parent
 
     let but_text_id = commands.spawn((
         Text::new("GOT IT"),
@@ -736,7 +736,7 @@ pub fn make_tutorial_popup(
         },
         TextColor(Color::srgb(0.9, 0.9, 0.9)),
     )).id();
-    commands.entity(but_id).push_children(&[but_text_id]);// add the child to the parent
+    commands.entity(but_id).add_children(&[but_text_id]);// add the child to the parent
 }
 
 
@@ -792,7 +792,7 @@ pub fn make_victory_popup(
             ..default()
         },
     )).id();
-    commands.entity(popup_id).push_children(&[text_id]);// add the child to the parent
+    commands.entity(popup_id).add_children(&[text_id]);// add the child to the parent
 
     let but_id_close = commands.spawn((
         Button,
@@ -810,7 +810,7 @@ pub fn make_victory_popup(
         BackgroundColor(button_colors.normal),
         ClosePopupButton{},
     )).id();
-    commands.entity(popup_id).push_children(&[but_id_close]);// add the child to the parent
+    commands.entity(popup_id).add_children(&[but_id_close]);// add the child to the parent
 
     let but_next_id = commands.spawn((
         Text::new("REPLAY SOLUTION"),
@@ -825,7 +825,7 @@ pub fn make_victory_popup(
             ..default()
         },
     )).id();
-    commands.entity(but_id_close).push_children(&[but_next_id]);// add the child to the parent
+    commands.entity(but_id_close).add_children(&[but_next_id]);// add the child to the parent
 
     let but_id_nextlevel = commands.spawn((
         Button,
@@ -843,7 +843,7 @@ pub fn make_victory_popup(
         BackgroundColor(button_colors.normal),
         NextLevelButton{},
     )).id();
-    commands.entity(popup_id).push_children(&[but_id_nextlevel]);// add the child to the parent
+    commands.entity(popup_id).add_children(&[but_id_nextlevel]);// add the child to the parent
 
     let but_nexttext_id = commands.spawn((
         Text::new("NEXT LEVEL"),
@@ -854,10 +854,10 @@ pub fn make_victory_popup(
         },
         TextColor(Color::srgb(0.9, 0.9, 0.9)),
     )).id();
-    commands.entity(but_id_nextlevel).push_children(&[but_nexttext_id]);// add the child to the parent
+    commands.entity(but_id_nextlevel).add_children(&[but_nexttext_id]);// add the child to the parent
 
     let tick_id = commands.spawn((
-        UiImage::new(tile_assets.tick.clone()),
+        ImageNode::new(tile_assets.tick.clone()),
         Node {
             position_type: PositionType::Absolute,
             left: Val::Percent(17.),
@@ -873,7 +873,7 @@ pub fn make_victory_popup(
             )
         )
     )).id();
-    commands.entity(popup_id).push_children(&[tick_id]);// add the child to the parent
+    commands.entity(popup_id).add_children(&[tick_id]);// add the child to the parent
 
 }
 

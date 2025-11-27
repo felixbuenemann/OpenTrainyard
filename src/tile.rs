@@ -69,7 +69,7 @@ pub fn spawn_tile(
                     let newtile = board_tilemap.map[coordinates.y as usize][coordinates.x as usize];
                     let child_id = make_tile(newtile, &mut commands, &board_assets_map, size, coordinates);
                     // Append to parent/child relationship:
-                    commands.entity(board_id).push_children(&[child_id]);// add the child to the parent
+                    commands.entity(board_id).add_children(&[child_id]);// add the child to the parent
                 }
             }
         }
@@ -157,15 +157,13 @@ fn add_color_minitiles_children(
                 );
                 // let child_asset = assets.get(&minitile).unwrap();
                 let child_asset = get_asset(minitile, assets);
-                child_cmd.spawn(SpriteBundle {
-                    // sprite: Sprite {
-                    //     custom_size: Some(Vec2::splat(small_tile_size as f32)),
-                    //     ..default()
-                    // },
-                    transform: Transform::from_xyz(pos_x, pos_y, 5.),
-                    texture: child_asset,
-                    ..default()
-                });
+                child_cmd.spawn((
+                    Sprite {
+                        image: child_asset,
+                        ..default()
+                    },
+                    Transform::from_xyz(pos_x, pos_y, 5.),
+                ));
             } else {
                 break;
             }
@@ -349,11 +347,13 @@ fn add_arrow_minitile_children(
     // Translate t to the right position:
     t.translation.x = pos_x;
     t.translation.y = pos_y;
-    child_cmd.spawn(SpriteBundle {
-        transform: t,
-        texture: arrow,
-        ..default()
-    });
+    child_cmd.spawn((
+        Sprite {
+            image: arrow,
+            ..default()
+        },
+        t,
+    ));
 }
 
 
@@ -375,11 +375,13 @@ fn add_funnels_minitile_children(
         // Translate t to the right position:
         t.translation.x = pos_x;
         t.translation.y = pos_y;
-        child_cmd.spawn(SpriteBundle {
-            transform: t,
-            texture: funnel.clone(),
-            ..default()
-        });
+        child_cmd.spawn((
+            Sprite {
+                image: funnel.clone(),
+                ..default()
+            },
+            t,
+        ));
     }
     if l_ {
         let mut t = Transform::from_xyz(0., 0., 0.5);
@@ -389,11 +391,13 @@ fn add_funnels_minitile_children(
         // Translate t to the right position:
         t.translation.x = pos_x;
         t.translation.y = pos_y;
-        child_cmd.spawn(SpriteBundle {
-            transform: t,
-            texture: funnel.clone(),
-            ..default()
-        });
+        child_cmd.spawn((
+            Sprite {
+                image: funnel.clone(),
+                ..default()
+            },
+            t,
+        ));
     }
     if t_ {
         let mut t = Transform::from_xyz(0., 0., 0.5);
@@ -403,11 +407,13 @@ fn add_funnels_minitile_children(
         // Translate t to the right position:
         t.translation.x = pos_x;
         t.translation.y = pos_y;
-        child_cmd.spawn(SpriteBundle {
-            transform: t,
-            texture: funnel.clone(),
-            ..default()
-        });
+        child_cmd.spawn((
+            Sprite {
+                image: funnel.clone(),
+                ..default()
+            },
+            t,
+        ));
     }
     if b_ {
         let mut t = Transform::from_xyz(0., 0., 0.5);
@@ -417,11 +423,13 @@ fn add_funnels_minitile_children(
         // Translate t to the right position:
         t.translation.x = pos_x;
         t.translation.y = pos_y;
-        child_cmd.spawn(SpriteBundle {
-            transform: t,
-            texture: funnel.clone(),
-            ..default()
-        });
+        child_cmd.spawn((
+            Sprite {
+                image: funnel.clone(),
+                ..default()
+            },
+            t,
+        ));
     }
 
 }
@@ -455,7 +463,7 @@ pub fn make_tile(
             .with_children(|parent| 
             {
                 let inner = get_asset("s_base_inner.png".to_string(), assets);
-                parent.spawn(SpriteBundle {texture: inner,transform: Transform::from_xyz(0., 0., 4.),..default()});
+                parent.spawn((Sprite { image: inner, ..default() }, Transform::from_xyz(0., 0., 4.)));
             })
             .with_children(
                 partial!(add_color_minitiles_children => _, elems, orig_len, true, assets, big_tile_size),
@@ -467,7 +475,7 @@ pub fn make_tile(
             .with_children(|parent| 
             {
                 let inner = get_asset("e_base_inner.png".to_string(), assets);
-                parent.spawn(SpriteBundle {texture: inner,transform: Transform::from_xyz(0., 0., 4.),..default()});
+                parent.spawn((Sprite { image: inner, ..default() }, Transform::from_xyz(0., 0., 4.)));
             })
             .with_children(
                 partial!(add_color_minitiles_children => _, elems, orig_len, false, assets, big_tile_size),
@@ -478,20 +486,18 @@ pub fn make_tile(
     } else if let Tile::PaintTile { track, c } = t {
         child.with_children(|parent| {
             let inner = get_asset(format!("p_{}.png", colorz_to_long_str(c)), assets);
-            parent.spawn(SpriteBundle {
-                texture: inner,
-                transform: Transform::from_xyz(0., 0., 4.),
-                ..default()
-            });
+            parent.spawn((
+                Sprite { image: inner, ..default() },
+                Transform::from_xyz(0., 0., 4.),
+            ));
         });
     } else if let Tile::SplitTile { side_in: _ } = t{
         child.with_children(|parent| {
-            parent.spawn(SpriteBundle {
-            texture: get_asset("scissor_u_inner.png".to_string(), assets),
-            transform: Transform::from_xyz(0., 0., 4.),
-            ..default()
+            parent.spawn((
+                Sprite { image: get_asset("scissor_u_inner.png".to_string(), assets), ..default() },
+                Transform::from_xyz(0., 0., 4.),
+            ));
         });
-    });
     }
     return child.id();
 }

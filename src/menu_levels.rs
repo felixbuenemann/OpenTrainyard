@@ -383,7 +383,7 @@ pub fn make_top_banner(
             ..default()
         },
     )).id();
-    commands.entity(ec_id).push_children(&[text_id]);
+    commands.entity(ec_id).add_children(&[text_id]);
 
     // Make a "Back" button at the left of  the banner, centered vertically:
     let margin = 10.; // Margin around the "Back" button
@@ -393,7 +393,7 @@ pub fn make_top_banner(
     let back_left = margin;
     let back_right = margin + button_width;
     let back_id = make_button("BACK".to_string(), commands, &font_assets, &button_colors, 20., back_left, back_right, back_top, back_bottom, BackButtonLevels{}, None::<Banner>);
-    commands.entity(ec_id).push_children(&[back_id]);
+    commands.entity(ec_id).add_children(&[back_id]);
     ec_id
 }
 
@@ -445,7 +445,7 @@ pub fn make_menu_elem(
         ));
         if score != "".to_string() {
             parent.spawn((
-                UiImage::new(tile_assets.tick.clone()),
+                ImageNode::new(tile_assets.tick.clone()),
                 Node {
                     // Center vertically and put at 66% of the width:
                     position_type: PositionType::Relative,

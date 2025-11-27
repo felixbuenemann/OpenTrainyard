@@ -69,7 +69,7 @@ impl Plugin for MainGamePlugin {
             .add_systems(FixedUpdate, logic_tick.run_if(in_state(GameState::Playing)))
             .add_event::<DoubleClickEvent>()
             .add_event::<TileHoverEvent>()
-            .add_event::<ScrollBarLimits>()
+            .add_event::<ScrollBarLimitsEvent>()
             .add_event::<BoardEvent>()
             .add_event::<ChangeGameStateEvent>()
             .add_event::<SpawnCosmeticTrainEvent>()
@@ -504,11 +504,11 @@ fn show_track_number_in_title_text(
                     let level_name = selected_level.level.clone();
 
                     let newtext = format!("{} ({}+{})", level_name, track_number, double_track_number);
-                    text.sections[0].value = newtext;
+                    **text = newtext;
                 },
                 _ => {
                     let level_name = selected_level.level.clone();
-                    text.sections[0].value = level_name;
+                    **text = level_name;
                 }
             }
         }
@@ -549,7 +549,7 @@ fn change_level(
     board_event_writer.send(BoardEvent::Make{map_name: selected_level.level.clone(), map: selected_level.current_map.clone(), scale: 1., position: None, index: None});
 
     for mut text in text_query.iter_mut() {
-        text.sections[0].value = selected_level.level.clone();
+        **text = selected_level.level.clone();
     }
 
     let just_begun_level = player_solutions_data.just_begun_level(&selected_level.level);
