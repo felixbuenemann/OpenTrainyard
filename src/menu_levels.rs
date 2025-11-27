@@ -277,7 +277,6 @@ fn scroll_events_levels_touch(
         *current_vy = Some(ev.vy);
     }
     if let Some(vy) = current_vy.as_ref() {
-        let vy = -vy;
         let delta = vy.clamp(menu_limits.min_firstbutton_heigh - menu_limits.current_firstbutton_heigh, menu_limits.max_firstbutton_heigh - menu_limits.current_firstbutton_heigh);
         if delta != 0. {
             menu_limits.current_firstbutton_heigh += delta;
