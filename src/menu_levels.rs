@@ -452,10 +452,11 @@ pub fn make_menu_elem(
                     margin: UiRect{right: Val::Px(2.), left: Val::Px(70.), ..default()},
                     // Align to the RIGHT of the parent object:
                     align_items: AlignItems::FlexEnd,
+                    // Scale down to ~45% of original size (66x54 -> 30x24)
+                    width: Val::Px(30.),
+                    height: Val::Px(24.),
                     ..default()
                 },
-                // Scale down to 50% of the width:
-                Transform::default().with_scale(Vec3::splat(0.45)),
             ));
             parent.spawn((
                 Text::new(score),
